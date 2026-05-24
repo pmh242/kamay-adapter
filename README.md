@@ -62,6 +62,7 @@ The core uses standard `Request`, `Response`, and `fetch` so it can run in Cloud
 cd deployments/cloudflare-worker
 npx wrangler secret put GITHUB_TOKEN
 npx wrangler secret put KAMAY_TOKEN
+npx wrangler secret put KAMAY_SIGNING_SECRET
 npx wrangler deploy
 ```
 
@@ -70,6 +71,7 @@ npx wrangler deploy
 | Name | Location | Required | Description |
 | --- | --- | --- | --- |
 | `KAMAY_TOKEN` | Secret | Yes | Shared bearer-style token required in `X-Kamay-Token` |
+| `KAMAY_SIGNING_SECRET` | Secret | Yes for signed URLs | HMAC secret used to verify short-lived signed GET URLs |
 | `GITHUB_TOKEN` | Secret | Yes for GitHub | GitHub token used for upstream API reads |
 | `KAMAY_SOURCE` | Env var | No | Backend source. Defaults to `github` |
 | `KAMAY_REPO` | Env var | Yes for GitHub | Repository slug such as `pmh242/kamay` |
@@ -86,6 +88,39 @@ Send it on every non-OPTIONS request:
 ```http
 X-Kamay-Token: <token>
 ```
+
+### Signed URL auth for Claude/web_fetch
+
+Some AI clients can fetch URLs but cannot send custom headers. For those clients, generate a short-lived signed URL locally and paste the full URL into the client. Signed URLs are GET-only bearer credentials: anyone with the URL can use it until it expires.
+
+Signed URL parameters:
+
+| Name | Description |
+| --- | --- |
+| `kmy_expires` | Unix timestamp in seconds. The adapter rejects expired URLs and URLs more than 30 minutes in the future. |
+| `kmy_sig` | Base64url HMAC-SHA-256 signature over the method, path, and sorted query string. |
+
+Generate a signed URL:
+
+```powershell
+cd C:\dev\sandbox\kamay-adapter
+$env:KAMAY_SIGNING_SECRET = "<same secret configured in Cloudflare>"
+node scripts/sign-url.js "https://kamay-adapter.epix.workers.dev/v1/repo/file?path=README.md&ref=main"
+```
+
+Optional TTL:
+
+```powershell
+node scripts/sign-url.js "https://kamay-adapter.epix.workers.dev/v1/repo/commits?ref=main&n=10" --ttl-seconds 1800
+```
+
+Rules:
+
+- Default TTL is 15 minutes.
+- Maximum TTL is 30 minutes.
+- Only GET requests can use signed URL auth.
+- The signature is bound to the exact path and query parameters.
+- If a signed URL is pasted into chat or logs, treat it as temporarily exposed.
 
 ## API reference
 
@@ -494,7 +529,7 @@ Cache-Control: no-store
 
 | Code | HTTP | Meaning |
 | --- | ---: | --- |
-| `UNAUTHORIZED` | 401 | Missing or invalid `X-Kamay-Token` |
+| `UNAUTHORIZED` | 401 | Missing or invalid `X-Kamay-Token`, or invalid signed URL |
 | `FORBIDDEN` | 403 | Token valid but operation forbidden |
 | `NOT_FOUND` | 404 | Path, ref, or SHA does not exist |
 | `INVALID_REQUEST` | 400 | Malformed input |
@@ -526,7 +561,7 @@ The public API is URL-versioned. Repository routes live under `/v1/repo/*`; the 
 node --test "core/**/*.test.js"
 ```
 
-The conformance suite enforces the RepositoryProvider operation catalog, capabilities identity, declared-supported methods, NOT_IMPLEMENTED behavior for unsupported operations, and core behavior for health, file, commits, and tree reads.
+The conformance suite enforces the RepositoryProvider operation catalog, capabilities identity, declared-supported methods, NOT_IMPLEMENTED behavior for unsupported operations, core behavior for health, file, commits, and tree reads, and both header and signed URL auth paths.
 
 ## Roadmap
 

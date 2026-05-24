@@ -59,7 +59,13 @@ Durable rules override only with an explicit task contract.
 - GitHub rate-limit headers are parsed by the backend.
 - Stub backend rate limit metadata uses the null shape.
 - `X-Kamay-Token` auth is validated before route dispatch.
+- Signed URL auth is secondary, GET-only, short-lived, and exact-request.
+- Signed URLs use `kmy_expires` and `kmy_sig`.
+- Signed URL TTL defaults to 15 minutes and must not exceed 30 minutes.
+- Signed URL helpers must not add runtime dependencies.
+- Do not add a public signing endpoint unless explicitly requested.
 - Runtime shims read `KAMAY_TOKEN`; core receives it through env.
+- Runtime shims read `KAMAY_SIGNING_SECRET`; core receives it through env.
 - Provider taxonomy is RepositoryProvider only.
 - Do not add task, memory, execution, or environment provider folders.
 - Stub backends do not get implemented unless a task contract explicitly asks.

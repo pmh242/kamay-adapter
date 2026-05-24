@@ -2,6 +2,7 @@ import { router } from "./router.js";
 import { validateToken } from "./services/auth.js";
 import { jsonError } from "./services/envelope.js";
 import { generateRequestId } from "./services/request-id.js";
+import { hasSignedUrlParams, validateSignedUrl } from "./services/signed-url.js";
 
 export async function handle(request, env = {}) {
   const ctx = {
@@ -14,7 +15,13 @@ export async function handle(request, env = {}) {
     if (request.method === "OPTIONS") {
       return optionsResponse();
     }
-    validateToken(request, env.KAMAY_TOKEN);
+    if (request.headers.has("X-Kamay-Token")) {
+      validateToken(request, env.KAMAY_TOKEN);
+    } else if (hasSignedUrlParams(request)) {
+      await validateSignedUrl(request, env.KAMAY_SIGNING_SECRET);
+    } else {
+      validateToken(request, env.KAMAY_TOKEN);
+    }
     return await router(request, env, ctx);
   } catch (error) {
     return jsonError(error, ctx);
