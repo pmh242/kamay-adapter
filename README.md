@@ -108,6 +108,18 @@ $env:KAMAY_SIGNING_SECRET = "<same secret configured in Cloudflare>"
 node scripts/sign-url.js "https://kamay-adapter.epix.workers.dev/v1/repo/file?path=README.md&ref=main"
 ```
 
+For repeated local use, create ignored file `.env.local` in the repo root:
+
+```text
+KAMAY_SIGNING_SECRET=<same secret configured in Cloudflare>
+```
+
+Then run the signer without setting the environment variable each time:
+
+```powershell
+node scripts/sign-url.js "https://kamay-adapter.epix.workers.dev/v1/repo/file?path=README.md&ref=main" --ttl-seconds 1800
+```
+
 Optional TTL:
 
 ```powershell

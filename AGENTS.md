@@ -64,6 +64,8 @@ Durable rules override only with an explicit task contract.
 - Signed URL TTL defaults to 15 minutes and must not exceed 30 minutes.
 - Signed URL helpers must not add runtime dependencies.
 - Do not add a public signing endpoint unless explicitly requested.
+- `scripts/sign-url.js` may read ignored `.env.local` for local signing.
+- Never commit `.env.local` or any signing secret.
 - Runtime shims read `KAMAY_TOKEN`; core receives it through env.
 - Runtime shims read `KAMAY_SIGNING_SECRET`; core receives it through env.
 - Provider taxonomy is RepositoryProvider only.
