@@ -1,0 +1,8 @@
+name = "kamay-adapter"
+main = "src/index.js"
+compatibility_date = "2024-09-23"
+
+[vars]
+KAMAY_SOURCE = "github"
+KAMAY_REPO = "pmh242/kamay"
+# Secrets via wrangler secret put: KAMAY_TOKEN, GITHUB_TOKEN

@@ -1,0 +1,15 @@
+{
+  "name": "kamay-adapter",
+  "version": "0.1.0",
+  "description": "Provider-agnostic repository cognition substrate for AI systems.",
+  "type": "module",
+  "private": false,
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test \"core/**/*.test.js\""
+  },
+  "dependencies": {}
+}
