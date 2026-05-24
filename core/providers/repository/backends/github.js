@@ -6,7 +6,7 @@ import { ERROR_CODES, KamayError } from "../../../services/errors.js";
 const SHA_RE = /^[a-f0-9]{4,40}$/i;
 
 export class GitHubBackend {
-  constructor({ repo, token, fetchImpl = fetch } = {}) {
+  constructor({ repo, token, fetchImpl } = {}) {
     if (!repo) {
       throw new KamayError(ERROR_CODES.INTERNAL_ERROR, "GitHub backend missing repo");
     }
@@ -16,7 +16,7 @@ export class GitHubBackend {
     this.source = "github";
     this.repo = repo;
     this.token = token;
-    this.fetchImpl = fetchImpl;
+    this.fetchImpl = fetchImpl ?? ((input, init) => globalThis.fetch(input, init));
     this.lastRateLimit = null;
   }
 
