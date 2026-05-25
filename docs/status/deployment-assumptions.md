@@ -1,8 +1,8 @@
 # Deployment Assumptions
 
-Status: REPO-VISIBLE ASSUMPTIONS AND INFRA-VISIBLE UNKNOWNS.
+Status: REPO-VISIBLE ASSUMPTIONS WITH LIVE VERIFICATION NOTES.
 
-This document distinguishes deploy-ready repo state from deployed infrastructure state. It does not verify Cloudflare account state, Worker version, secret values, or live endpoint health.
+This document distinguishes deploy-ready repo state from deployed infrastructure state. Live verification was performed with sanitized output; secret values are not recorded here.
 
 ## Repo-Visible Deployment Readiness
 
@@ -14,14 +14,27 @@ This document distinguishes deploy-ready repo state from deployed infrastructure
 
 ## Infra-Visible Deployment State
 
-UNKNOWN unless checked outside repo:
+VERIFIED by operator-run `node scripts/verify-live.js` after synchronizing ignored local `.env.local` with rotated Cloudflare Worker secrets:
 
-- Whether the Worker is currently deployed.
-- Which Worker version is active.
-- Whether Worker secrets exist.
-- Whether secret values match local signing/operator assumptions.
-- Whether the configured GitHub token can read the configured private repo.
-- Whether a public Worker URL is reachable from a given AI client.
+- Live base URL: `https://kamay-adapter.epix.workers.dev`
+- Verification status: PASS.
+- Worker reachability: VERIFIED.
+- Auth gate: VERIFIED.
+- Header auth: VERIFIED.
+- Signed GET auth: VERIFIED.
+- Signed POST rejection: VERIFIED.
+- GitHub backend read path: VERIFIED for commits/tree.
+- Rate-limit metadata shape: VERIFIED.
+- Secret values: not recorded.
+- `.env.local`: local-only ignored operator file.
+
+Still UNVERIFIED:
+
+- Custom domain/route if any.
+- Long-term monitoring.
+- Rollback execution.
+- Non-GitHub backend runtime behavior.
+- MCP runtime.
 
 ## Runtime Env And Secret Usage
 
@@ -42,7 +55,7 @@ Repo-observed env inputs:
 - ASSUMED: Cloudflare Worker runtime provides standard `Request`, `Response`, `fetch`, `URL`, `TextEncoder`, and Web Crypto APIs.
 - ASSUMED: Worker secrets are configured out-of-band with `wrangler secret put`.
 - ASSUMED: deploying the Worker uses the current local repo state at deploy time.
-- UNKNOWN: Cloudflare account, route, domain, and active deployment metadata.
+- UNKNOWN: Cloudflare custom route/domain metadata, if any.
 
 ## Local Artifacts
 
@@ -50,9 +63,12 @@ Repo-observed env inputs:
 
 ## Deployment Verification Boundary
 
-Repo inspection can verify deploy readiness. It cannot verify deployed state. Deployed state requires an explicit external check such as:
+Repo inspection can verify deploy readiness. Deployed state requires explicit external checks. The current live verification evidence is the sanitized PASS from:
+
+- `node scripts/verify-live.js`
+
+Other checks remain useful for release operations:
 
 - `npx wrangler deployments list`
-- a live `/health` request
-- a live signed URL request
 - Cloudflare dashboard or connector metadata
+- rollback dry-run planning without executing rollback

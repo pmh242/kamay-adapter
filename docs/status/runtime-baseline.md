@@ -1,8 +1,8 @@
 # Runtime Baseline
 
-Status: CURRENT REPO-OBSERVED RUNTIME TRUTH.
+Status: CURRENT REPO-OBSERVED RUNTIME TRUTH WITH LIVE VERIFICATION NOTES.
 
-This document describes code reality in the repository. It does not assert live Cloudflare deployment state, secret configuration, or real GitHub API reachability.
+This document describes code reality in the repository. Live verification notes are limited to the sanitized PASS from `node scripts/verify-live.js`.
 
 ## Entry Points
 
@@ -52,11 +52,16 @@ Any other route is expected to return `NOT_FOUND` through the envelope.
 - IMPLEMENTED / TESTED: if signed URL params are present and no header token is present, signed URL auth is attempted against `env.KAMAY_SIGNING_SECRET`.
 - IMPLEMENTED / TESTED: signed URL auth is GET-only.
 - IMPLEMENTED / TESTED: missing auth returns `UNAUTHORIZED` when `KAMAY_TOKEN` is configured.
-- ASSUMED: runtime environments provide Web Crypto APIs used by signed URL validation.
+- LIVE VERIFIED: auth gate rejects unauthenticated requests at `https://kamay-adapter.epix.workers.dev`.
+- LIVE VERIFIED: header auth works at `https://kamay-adapter.epix.workers.dev`.
+- LIVE VERIFIED: signed GET works at `https://kamay-adapter.epix.workers.dev`.
+- LIVE VERIFIED: signed POST is rejected at `https://kamay-adapter.epix.workers.dev`.
+- LIVE VERIFIED: runtime Web Crypto behavior is sufficient for signed GET verification in the Worker.
 
 ## Provider Backend State
 
 - IMPLEMENTED / TESTED: `github` backend implements the RepositoryProvider read contract with mocked upstream tests.
+- LIVE VERIFIED: GitHub backend read path works for commits/tree against the configured repo.
 - IMPLEMENTED: `gitlab`, `gitea`, and `local` backends are registered.
 - DEFERRED: `gitlab`, `gitea`, and `local` backend operations throw `NOT_IMPLEMENTED`.
 - IMPLEMENTED: `getRepositoryBackend(source, env)` selects the backend using `env.KAMAY_SOURCE`, defaulting to `github`.
@@ -66,4 +71,4 @@ Any other route is expected to return `NOT_FOUND` through the envelope.
 - IMPLEMENTED: all core responses use JSON envelopes.
 - IMPLEMENTED: response metadata includes request ID, API version, provider, backend, timestamp, and rate-limit metadata.
 - IMPLEMENTED / TESTED: GitHub rate-limit headers are parsed in mocked tests.
-- ASSUMED: live GitHub responses include rate-limit headers compatible with current parser.
+- LIVE VERIFIED: envelope metadata is present, request IDs are valid, and GitHub rate-limit metadata shape is present in the verification runner output.
