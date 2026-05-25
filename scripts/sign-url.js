@@ -10,16 +10,23 @@ const args = process.argv.slice(2);
 const url = args.find((arg) => !arg.startsWith("--"));
 const ttlSeconds = readOption(args, "--ttl-seconds") ?? String(SIGNED_URL_TTL.DEFAULT_SECONDS);
 const method = readOption(args, "--method") ?? "GET";
+const capability = {
+  operation: readOption(args, "--operation"),
+  pathPrefix: readOption(args, "--path-prefix"),
+  ref: readOption(args, "--ref"),
+  label: readOption(args, "--label")
+};
 
 if (!url) {
-  console.error("Usage: node scripts/sign-url.js <url> [--ttl-seconds 900] [--method GET]");
+  console.error("Usage: node scripts/sign-url.js <url> [--ttl-seconds 900] [--method GET] [--operation getFile] [--path-prefix docs/] [--ref main] [--label review]");
   process.exit(1);
 }
 
 try {
   const signed = await signUrl(url, process.env.KAMAY_SIGNING_SECRET, {
     ttlSeconds,
-    method
+    method,
+    capability
   });
   console.log(signed);
 } catch (error) {

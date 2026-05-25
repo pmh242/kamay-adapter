@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { handle } from "./index.js";
+import { signUrl as signCapabilityUrl } from "./services/signed-url.js";
 
 const KAMAY_TOKEN = "test-kamay-token";
 const SIGNING_SECRET = "test-signing-secret";
@@ -124,6 +125,111 @@ test("signed URL does not authorize POST requests", async () => {
     method: "POST",
     body: JSON.stringify({ paths: ["README.md"], ref: "main" })
   }), ENV);
+  const body = await response.json();
+  assert.equal(response.status, 401);
+  assert.equal(body.error.code, "UNAUTHORIZED");
+});
+
+test("valid scoped signed capability GET authorizes matching file path and ref", async () => {
+  const signedUrl = await signCapabilityUrl(
+    "https://adapter.test/v1/repo/file?path=docs/status/runtime-baseline.md&ref=main",
+    SIGNING_SECRET,
+    {
+      capability: {
+        operation: "getFile",
+        pathPrefix: "docs/",
+        ref: "main",
+        label: "review-docs"
+      }
+    }
+  );
+  const response = await handle(new Request(signedUrl), {
+    ...ENV,
+    fetchImpl: async () => new Response(JSON.stringify({
+      type: "file",
+      path: "docs/status/runtime-baseline.md",
+      sha: "abc123",
+      size: 7,
+      content: btoa("content")
+    }), {
+      headers: {
+        "x-ratelimit-remaining": "1",
+        "x-ratelimit-limit": "2",
+        "x-ratelimit-reset": "1727049600"
+      }
+    })
+  });
+  const body = await response.json();
+  assert.equal(response.status, 200);
+  assert.equal(body.data.path, "docs/status/runtime-baseline.md");
+});
+
+test("scoped signed capability rejects path outside prefix", async () => {
+  const signedUrl = await signCapabilityUrl(
+    "https://adapter.test/v1/repo/file?path=README.md&ref=main",
+    SIGNING_SECRET,
+    {
+      capability: {
+        operation: "getFile",
+        pathPrefix: "docs/",
+        ref: "main"
+      }
+    }
+  );
+  const response = await handle(new Request(signedUrl), ENV);
+  const body = await response.json();
+  assert.equal(response.status, 401);
+  assert.equal(body.error.code, "UNAUTHORIZED");
+});
+
+test("scoped signed capability rejects mismatched ref", async () => {
+  const signedUrl = await signCapabilityUrl(
+    "https://adapter.test/v1/repo/tree?ref=dev&path=docs",
+    SIGNING_SECRET,
+    {
+      capability: {
+        operation: "getTree",
+        pathPrefix: "docs",
+        ref: "main"
+      }
+    }
+  );
+  const response = await handle(new Request(signedUrl), ENV);
+  const body = await response.json();
+  assert.equal(response.status, 401);
+  assert.equal(body.error.code, "UNAUTHORIZED");
+});
+
+test("scoped signed capability rejects mismatched operation", async () => {
+  const signedUrl = await signCapabilityUrl(
+    "https://adapter.test/v1/repo/commits?ref=main&n=3",
+    SIGNING_SECRET,
+    {
+      capability: {
+        operation: "getFile",
+        ref: "main"
+      }
+    }
+  );
+  const response = await handle(new Request(signedUrl), ENV);
+  const body = await response.json();
+  assert.equal(response.status, 401);
+  assert.equal(body.error.code, "UNAUTHORIZED");
+});
+
+test("scoped signed capability rejects path prefix on non-path operations", async () => {
+  const signedUrl = await signCapabilityUrl(
+    "https://adapter.test/v1/repo/commits?ref=main&n=3",
+    SIGNING_SECRET,
+    {
+      capability: {
+        operation: "getCommits",
+        pathPrefix: "docs/",
+        ref: "main"
+      }
+    }
+  );
+  const response = await handle(new Request(signedUrl), ENV);
   const body = await response.json();
   assert.equal(response.status, 401);
   assert.equal(body.error.code, "UNAUTHORIZED");

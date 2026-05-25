@@ -10,7 +10,7 @@ Live verification was recorded from operator-run `node scripts/verify-live.js` a
 | JSON envelope | IMPLEMENTED | Shared success/error shape with request ID and metadata. |
 | Error catalog | IMPLEMENTED | Stable v1 codes live in `core/services/errors.js`. |
 | Header auth | IMPLEMENTED / TESTED / LIVE VERIFIED | `X-Kamay-Token`; runtime provides `KAMAY_TOKEN`. |
-| Signed URL auth | IMPLEMENTED / TESTED / LIVE VERIFIED | GET-only, `kmy_expires` + `kmy_sig`, 30 minute max TTL. Signed GET verified; signed POST rejection verified. |
+| Signed capability URL auth | IMPLEMENTED / TESTED / LIVE VERIFIED | GET-only, `kmy_expires` + `kmy_sig`, 30 minute max TTL. Optional operation, path-prefix, ref, and label capability params are signature-bound. Signed GET verified; signed POST rejection verified. |
 | Request IDs | IMPLEMENTED | Generated at edge entrypoint. |
 | Repository routes | IMPLEMENTED | `/v1/repo/*` dispatcher and route handlers. |
 | GitHub backend | IMPLEMENTED / TESTED / LIVE VERIFIED | Read operations covered by mocked conformance tests. Live commits/tree reads verified. |

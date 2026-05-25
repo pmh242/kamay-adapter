@@ -60,14 +60,26 @@ await runJsonCheck("headerCapabilities", checks, `${baseUrl}/v1/repo/capabilitie
 });
 
 const signedFileUrl = await signUrl(`${baseUrl}/v1/repo/file?path=README.md&ref=main`, process.env.KAMAY_SIGNING_SECRET, {
-  ttlSeconds: 300
+  ttlSeconds: 300,
+  capability: {
+    operation: "getFile",
+    pathPrefix: "README.md",
+    ref: "main",
+    label: "verify-readme"
+  }
 });
 await runJsonCheck("signedFileGet", checks, signedFileUrl, {
   expect: ({ status, body }) => status === 200 && body?.data?.path === "README.md"
 });
 
 const signedFilesUrl = await signUrl(`${baseUrl}/v1/repo/files?paths=README.md&ref=main`, process.env.KAMAY_SIGNING_SECRET, {
-  ttlSeconds: 300
+  ttlSeconds: 300,
+  capability: {
+    operation: "getFiles",
+    pathPrefix: "README.md",
+    ref: "main",
+    label: "verify-post-reject"
+  }
 });
 await runJsonCheck("signedFilesPostRejected", checks, signedFilesUrl, {
   method: "POST",

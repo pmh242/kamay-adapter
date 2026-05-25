@@ -98,9 +98,9 @@ Send it on every non-OPTIONS request:
 X-Kamay-Token: <token>
 ```
 
-### Signed URL auth for Claude/web_fetch
+### Signed capability URL auth for Claude/web_fetch
 
-Some AI clients can fetch URLs but cannot send custom headers. For those clients, generate a short-lived signed URL locally and paste the full URL into the client. Signed URLs are GET-only bearer credentials: anyone with the URL can use it until it expires.
+Some AI clients can fetch URLs but cannot send custom headers. For those clients, generate a short-lived signed capability URL locally and paste the full URL into the client. Signed capability URLs are GET-only bearer credentials: anyone with the URL can use it until it expires.
 
 Signed URL parameters:
 
@@ -108,13 +108,17 @@ Signed URL parameters:
 | --- | --- |
 | `kmy_expires` | Unix timestamp in seconds. The adapter rejects expired URLs and URLs more than 30 minutes in the future. |
 | `kmy_sig` | Base64url HMAC-SHA-256 signature over the method, path, and sorted query string. |
+| `kmy_cap_op` | Optional operation restriction, such as `getFile` or `getTree`. |
+| `kmy_cap_path_prefix` | Optional path prefix restriction for file, files, and tree reads. |
+| `kmy_cap_ref` | Optional ref restriction. |
+| `kmy_cap_label` | Optional operator label. Not an identity or authorization source. |
 
 Generate a signed URL:
 
 ```powershell
 cd C:\dev\sandbox\kamay-adapter
 $env:KAMAY_SIGNING_SECRET = "<same secret configured in Cloudflare>"
-node scripts/sign-url.js "https://kamay-adapter.epix.workers.dev/v1/repo/file?path=README.md&ref=main"
+node scripts/sign-url.js "https://kamay-adapter.epix.workers.dev/v1/repo/file?path=README.md&ref=main" --operation getFile --path-prefix README.md --ref main --label review
 ```
 
 For repeated local use, create ignored file `.env.local` in the repo root:
@@ -141,6 +145,7 @@ Rules:
 - Maximum TTL is 30 minutes.
 - Only GET requests can use signed URL auth.
 - The signature is bound to the exact path and query parameters.
+- Optional capability parameters are also signature-bound and checked before backend access.
 - If a signed URL is pasted into chat or logs, treat it as temporarily exposed.
 
 ## API reference

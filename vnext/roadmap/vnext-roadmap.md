@@ -6,14 +6,14 @@ Status: NON-AUTHORITATIVE FUTURE DIRECTION.
 
 ## Candidate Directions
 
-- PLANNED: observe real Claude/ChatGPT/Codex review workflows using signed URLs.
+- PLANNED: observe real Claude/ChatGPT/Codex review workflows using signed capability URLs.
 - PLANNED: keep docs aligned with operational usage.
 - DEFERRED: review bundle endpoint for bounded multi-file reviewer packets.
 - DEFERRED: multi-repo allowlist if one deployment per repo becomes painful.
 - DEFERRED: local filesystem backend for trusted local environments.
 - DEFERRED: GitLab and Gitea backend implementations.
 - DEFERRED: MCP server runtime when a concrete client workflow needs tools instead of HTTP.
-- EXPERIMENTAL: one-time signed URLs using KV or Durable Objects.
+- EXPERIMENTAL: one-time signed capability URLs using KV or Durable Objects.
 
 ## Guardrails
 

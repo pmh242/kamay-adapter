@@ -2,7 +2,11 @@ import { ERROR_CODES, KamayError } from "./errors.js";
 
 export const SIGNED_URL_PARAMS = Object.freeze({
   EXPIRES: "kmy_expires",
-  SIGNATURE: "kmy_sig"
+  SIGNATURE: "kmy_sig",
+  CAPABILITY_OPERATION: "kmy_cap_op",
+  CAPABILITY_PATH_PREFIX: "kmy_cap_path_prefix",
+  CAPABILITY_REF: "kmy_cap_ref",
+  CAPABILITY_LABEL: "kmy_cap_label"
 });
 
 export const SIGNED_URL_TTL = Object.freeze({
@@ -42,6 +46,7 @@ export async function validateSignedUrl(request, signingSecret, nowMs = Date.now
   if (!timingSafeEqual(receivedSignature, expectedSignature)) {
     throw unauthorized();
   }
+  validateCapabilityScope(request.method, url);
 }
 
 export async function signUrl(input, signingSecret, options = {}) {
@@ -68,6 +73,7 @@ export async function signUrl(input, signingSecret, options = {}) {
     SIGNED_URL_PARAMS.EXPIRES,
     String(Math.floor(Date.now() / 1000) + ttlSeconds)
   );
+  applyCapability(url, options.capability);
   const signature = await signCanonicalRequest(signingSecret, canonicalRequest(method, url));
   url.searchParams.set(SIGNED_URL_PARAMS.SIGNATURE, signature);
   return url.toString();
@@ -127,6 +133,95 @@ function timingSafeEqual(left, right) {
     diff |= leftBytes[index] ^ rightBytes[index];
   }
   return diff === 0;
+}
+
+function applyCapability(url, capability) {
+  if (!capability) {
+    return;
+  }
+  setOptionalParam(url, SIGNED_URL_PARAMS.CAPABILITY_OPERATION, capability.operation);
+  setOptionalParam(url, SIGNED_URL_PARAMS.CAPABILITY_PATH_PREFIX, capability.pathPrefix);
+  setOptionalParam(url, SIGNED_URL_PARAMS.CAPABILITY_REF, capability.ref);
+  setOptionalParam(url, SIGNED_URL_PARAMS.CAPABILITY_LABEL, capability.label);
+}
+
+function setOptionalParam(url, key, value) {
+  if (value !== undefined && value !== null && String(value) !== "") {
+    url.searchParams.set(key, String(value));
+  }
+}
+
+function validateCapabilityScope(method, url) {
+  const operation = url.searchParams.get(SIGNED_URL_PARAMS.CAPABILITY_OPERATION);
+  const pathPrefix = url.searchParams.get(SIGNED_URL_PARAMS.CAPABILITY_PATH_PREFIX);
+  const ref = url.searchParams.get(SIGNED_URL_PARAMS.CAPABILITY_REF);
+
+  if (operation && operation !== inferOperation(method, url)) {
+    throw unauthorized();
+  }
+  if (ref && ref !== url.searchParams.get("ref")) {
+    throw unauthorized();
+  }
+  if (pathPrefix) {
+    const paths = pathsForRequest(url);
+    if (paths.length === 0 || !paths.every((path) => pathMatchesPrefix(path, pathPrefix))) {
+      throw unauthorized();
+    }
+  }
+}
+
+function inferOperation(method, url) {
+  if (method !== "GET") {
+    return null;
+  }
+  if (url.pathname === "/health" || url.pathname === "/v1/repo/health") {
+    return "health";
+  }
+  if (url.pathname === "/v1/repo/capabilities") {
+    return "capabilities";
+  }
+  if (url.pathname === "/v1/repo/file") {
+    return "getFile";
+  }
+  if (url.pathname === "/v1/repo/files") {
+    return "getFiles";
+  }
+  if (url.pathname.startsWith("/v1/repo/blob/")) {
+    return "getBlob";
+  }
+  if (url.pathname === "/v1/repo/tree") {
+    return "getTree";
+  }
+  if (url.pathname === "/v1/repo/commits") {
+    return "getCommits";
+  }
+  if (url.pathname === "/v1/repo/diff") {
+    return "getDiff";
+  }
+  return null;
+}
+
+function pathsForRequest(url) {
+  if (url.pathname === "/v1/repo/file" || url.pathname === "/v1/repo/tree") {
+    return [url.searchParams.get("path") ?? ""];
+  }
+  if (url.pathname === "/v1/repo/files") {
+    return (url.searchParams.get("paths") ?? "")
+      .split(",")
+      .map((path) => path.trim())
+      .filter(Boolean);
+  }
+  return [];
+}
+
+function pathMatchesPrefix(path, prefix) {
+  const normalizedPath = stripLeadingSlash(path);
+  const normalizedPrefix = stripLeadingSlash(prefix).replace(/\/+$/, "");
+  return normalizedPath === normalizedPrefix || normalizedPath.startsWith(`${normalizedPrefix}/`);
+}
+
+function stripLeadingSlash(value) {
+  return String(value).replace(/^\/+/, "");
 }
 
 function base64UrlEncode(buffer) {
