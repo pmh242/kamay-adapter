@@ -40,6 +40,13 @@ The legacy exact-query format remains supported for backward compatibility:
 
 Default TTL is 15 minutes. Maximum TTL is 30 minutes. Signed capability URLs are bearer URLs: anyone holding the URL can use it until expiry. Compact URLs reduce query-canonicalization risk for AI web fetch tools by keeping the delegated request inside the signed token. v2 compact URLs also reduce length by using route, query, and operation codes. Capability scope is covered by the signature and is validated before repository backend access.
 
+Compatibility note:
+
+- Local PowerShell and ChatGPT web have successfully consumed delegated capability URLs.
+- Claude web sandbox has blocked the custom domain with `host_not_allowed`; this is provider egress policy, not adapter auth failure.
+- Claude Code/local remains the recommended Claude path.
+- Compact v2 reduces URL length but does not bypass provider allowlists.
+
 Authority model:
 
 - Operator authority: holds `KAMAY_TOKEN` and `KAMAY_SIGNING_SECRET`.

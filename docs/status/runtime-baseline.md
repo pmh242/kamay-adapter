@@ -52,6 +52,7 @@ Any other route is expected to return `NOT_FOUND` through the envelope.
 - IMPLEMENTED / TESTED: if signed URL params are present and no header token is present, signed URL auth is attempted against `env.KAMAY_SIGNING_SECRET`.
 - IMPLEMENTED / TESTED: signed URL auth is GET-only.
 - IMPLEMENTED / TESTED: signed capability URL params for operation, path-prefix, ref, and label are HMAC-covered.
+- IMPLEMENTED / TESTED: compact `kmy_cap` v2 capability URLs use shorter signed payload keys to reduce URL length while preserving stateless HMAC validation.
 - IMPLEMENTED / TESTED: operation, ref, and path-prefix mismatches return `UNAUTHORIZED` before backend access.
 - IMPLEMENTED / TESTED: missing auth returns `UNAUTHORIZED` when `KAMAY_TOKEN` is configured.
 - LIVE VERIFIED: auth gate rejects unauthenticated requests at `https://kamay-adapter.epix.workers.dev`.
@@ -61,6 +62,8 @@ Any other route is expected to return `NOT_FOUND` through the envelope.
 - LIVE VERIFIED: scoped signed capability GET works at `https://kamay-adapter.epix.workers.dev`.
 - LIVE VERIFIED: path-prefix mismatch, operation mismatch, and ref mismatch return `401 UNAUTHORIZED` at `https://kamay-adapter.epix.workers.dev`.
 - LIVE VERIFIED: runtime Web Crypto behavior is sufficient for signed GET verification in the Worker.
+- COMPATIBILITY VERIFIED: local PowerShell and ChatGPT web can consume delegated capability URLs.
+- COMPATIBILITY BLOCKED: Claude web sandbox returned `host_not_allowed` for the custom domain, which is provider egress policy rather than adapter auth behavior.
 
 ## Provider Backend State
 

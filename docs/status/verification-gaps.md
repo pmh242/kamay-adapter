@@ -39,6 +39,15 @@ Operator ran `node scripts/verify-live.js` after synchronizing ignored local `.e
 - NOT RECORDED: secret values.
 - LOCAL ONLY: `.env.local` is an ignored operator file.
 
+## AI Client Compatibility Findings
+
+- VERIFIED: local PowerShell successfully consumed delegated capability URLs.
+- VERIFIED: ChatGPT web successfully consumed a delegated capability URL.
+- OBSERVED: Claude web sandbox blocked the custom domain with `host_not_allowed`.
+- CLASSIFICATION: the Claude web result is provider egress policy, not an adapter auth failure.
+- RECOMMENDED CLAUDE PATH: Claude Code/local remains the recommended Claude path because it can use local tools and approved network access.
+- LIMITATION: compact v2 URL support reduces delegated URL length, but it does not bypass provider host allowlists or egress policy.
+
 ## Still Not Verified
 
 - UNVERIFIED: current Node server smoke startup in this baseline task.
