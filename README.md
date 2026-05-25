@@ -121,6 +121,14 @@ $env:KAMAY_SIGNING_SECRET = "<same secret configured in Cloudflare>"
 node scripts/sign-url.js "https://kamay-adapter.epix.workers.dev/v1/repo/file?path=README.md&ref=main" --operation getFile --path-prefix README.md --ref main --label review
 ```
 
+For common ChatGPT/Claude handoffs, use the delegated URL preset helper. By default it prints only sanitized metadata; add `--print-url` when you are ready to paste the bearer URL into the AI client.
+
+```powershell
+node scripts/delegate-url.js readme --print-url
+node scripts/delegate-url.js docs-tree --print-url
+node scripts/delegate-url.js commits --n 10 --print-url
+```
+
 For repeated local use, create ignored file `.env.local` in the repo root:
 
 ```text
