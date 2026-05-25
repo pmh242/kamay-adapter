@@ -14,6 +14,18 @@ This document distinguishes deploy-ready repo state from deployed infrastructure
 
 ## Infra-Visible Deployment State
 
+VERIFIED by KAMAY-ADAPTER-DEPLOY-001-RUN:
+
+- Worker: `kamay-adapter`
+- Live base URL: `https://kamay-adapter.epix.workers.dev`
+- Commit deployed: `22172acd0b44a0aba13cd1debd092b4ce29311e5`
+- Pre-deploy version: `72818c9a-4b0a-4dd0-afab-851409982aab`
+- Post-deploy version: `b7932924-12f0-46b5-bd8d-cfa5f24b6e7e`
+- Deployment ID: `f37f499f-1646-4870-aa27-c74af3843a3f`
+- Rollback needed: NO.
+- Rollback target if needed later: `72818c9a-4b0a-4dd0-afab-851409982aab`
+- Verification output: sanitized; no secret values or full signed URLs recorded.
+
 VERIFIED by operator-run `node scripts/verify-live.js` after synchronizing ignored local `.env.local` with rotated Cloudflare Worker secrets:
 
 - Live base URL: `https://kamay-adapter.epix.workers.dev`
@@ -23,6 +35,11 @@ VERIFIED by operator-run `node scripts/verify-live.js` after synchronizing ignor
 - Header auth: VERIFIED.
 - Signed GET auth: VERIFIED.
 - Signed POST rejection: VERIFIED.
+- Backward-compatible signed GET: VERIFIED.
+- Scoped signed capability GET: VERIFIED.
+- Path-prefix mismatch rejection: VERIFIED as `401 UNAUTHORIZED`.
+- Operation mismatch rejection: VERIFIED as `401 UNAUTHORIZED`.
+- Ref mismatch rejection: VERIFIED as `401 UNAUTHORIZED`.
 - GitHub backend read path: VERIFIED for commits/tree.
 - Rate-limit metadata shape: VERIFIED.
 - Secret values: not recorded.

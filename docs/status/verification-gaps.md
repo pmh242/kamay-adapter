@@ -24,10 +24,18 @@ Operator ran `node scripts/verify-live.js` after synchronizing ignored local `.e
 - VERIFIED: header auth works.
 - VERIFIED: signed GET works.
 - VERIFIED: signed POST is rejected.
+- VERIFIED: commit `22172acd0b44a0aba13cd1debd092b4ce29311e5` deployed to Worker version `b7932924-12f0-46b5-bd8d-cfa5f24b6e7e`.
+- VERIFIED: backward-compatible signed GET works after deployment.
+- VERIFIED: scoped signed capability GET works after deployment.
+- VERIFIED: path-prefix mismatch rejects with `401 UNAUTHORIZED`.
+- VERIFIED: operation mismatch rejects with `401 UNAUTHORIZED`.
+- VERIFIED: ref mismatch rejects with `401 UNAUTHORIZED`.
 - VERIFIED: GitHub backend read path works for commits/tree.
 - VERIFIED: response envelope metadata is present.
 - VERIFIED: request IDs are valid.
 - VERIFIED: GitHub rate-limit metadata shape is present.
+- VERIFIED: sanitized verification output only.
+- VERIFIED: rollback was not needed for deployment `f37f499f-1646-4870-aa27-c74af3843a3f`.
 - NOT RECORDED: secret values.
 - LOCAL ONLY: `.env.local` is an ignored operator file.
 
@@ -39,7 +47,7 @@ Operator ran `node scripts/verify-live.js` after synchronizing ignored local `.e
 - UNVERIFIED: MCP runtime because it is deferred and README-only.
 - UNVERIFIED: custom domain/route if any.
 - UNVERIFIED: long-term monitoring.
-- UNVERIFIED: rollback execution.
+- UNVERIFIED: rollback execution; rollback target is recorded as `72818c9a-4b0a-4dd0-afab-851409982aab`.
 
 ## Assumed From Code
 
@@ -52,7 +60,7 @@ Operator ran `node scripts/verify-live.js` after synchronizing ignored local `.e
 
 - UNKNOWN: whether one deployment per repo remains sufficient.
 - UNKNOWN: whether Claude/ChatGPT/Codex workflows need a review bundle endpoint.
-- UNKNOWN: whether signed URL replay risk justifies nonce storage.
+- UNKNOWN: whether signed capability URL replay risk justifies nonce storage.
 - UNKNOWN: whether Cloudflare Access, WAF, or additional rate limiting is required.
 
 ## Verification To Add When Needed
