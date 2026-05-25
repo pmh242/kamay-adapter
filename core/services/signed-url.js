@@ -18,6 +18,48 @@ export const SIGNED_URL_TTL = Object.freeze({
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 
+const ROUTE_CODES = Object.freeze({
+  h: "/v1/repo/health",
+  cap: "/v1/repo/capabilities",
+  f: "/v1/repo/file",
+  fs: "/v1/repo/files",
+  b: "/v1/repo/blob",
+  t: "/v1/repo/tree",
+  c: "/v1/repo/commits",
+  d: "/v1/repo/diff"
+});
+
+const ROUTE_TO_CODE = Object.freeze(Object.fromEntries(
+  Object.entries(ROUTE_CODES).map(([code, route]) => [route, code])
+));
+
+const OPERATION_CODES = Object.freeze({
+  h: "health",
+  cap: "capabilities",
+  f: "getFile",
+  fs: "getFiles",
+  b: "getBlob",
+  t: "getTree",
+  c: "getCommits",
+  d: "getDiff"
+});
+
+const OPERATION_TO_CODE = Object.freeze(Object.fromEntries(
+  Object.entries(OPERATION_CODES).map(([code, operation]) => [operation, code])
+));
+
+const QUERY_KEYS = Object.freeze({
+  p: "path",
+  ps: "paths",
+  r: "ref",
+  n: "n",
+  s: "sha"
+});
+
+const QUERY_TO_KEY = Object.freeze(Object.fromEntries(
+  Object.entries(QUERY_KEYS).map(([shortKey, key]) => [key, shortKey])
+));
+
 export async function validateSignedUrl(request, signingSecret, nowMs = Date.now()) {
   if (!signingSecret) {
     throw new KamayError(
@@ -77,6 +119,7 @@ export async function signUrl(input, signingSecret, options = {}) {
     return await signCompactUrl(input, signingSecret, {
       method,
       ttlSeconds,
+      version: options.compactVersion ?? 2,
       capability: options.capability
     });
   }
@@ -136,22 +179,16 @@ async function signPayload(signingSecret, payload) {
 async function signCompactUrl(input, signingSecret, options) {
   const url = new URL(input);
   url.searchParams.delete(SIGNED_URL_PARAMS.COMPACT_CAPABILITY);
-  const query = [];
+  const queryEntries = [];
   for (const [key, value] of url.searchParams) {
     if (!isSignedUrlParam(key)) {
-      query.push([key, value]);
+      queryEntries.push([key, value]);
     }
   }
-  const payload = {
-    v: 1,
-    method: options.method,
-    route: url.pathname,
-    query,
-    expires: Math.floor(Date.now() / 1000) + options.ttlSeconds
-  };
-  if (options.capability) {
-    payload.capability = compactCapability(options.capability);
-  }
+  const expires = Math.floor(Date.now() / 1000) + options.ttlSeconds;
+  const payload = options.version === 1
+    ? buildCompactV1Payload(url.pathname, queryEntries, expires, options)
+    : buildCompactV2Payload(url.pathname, queryEntries, expires, options);
   const encodedPayload = base64UrlEncode(encoder.encode(JSON.stringify(payload)));
   const signature = await signPayload(signingSecret, encodedPayload);
   const compactUrl = new URL(url.origin + url.pathname);
@@ -203,36 +240,89 @@ async function validateCompactSignedUrl(request, signingSecret, nowMs) {
 function parseCompactPayload(encodedPayload) {
   try {
     const payload = JSON.parse(base64UrlDecode(encodedPayload));
-    if (
-      payload?.v !== 1
-      || payload.method !== "GET"
-      || !isValidRoute(payload.route)
-      || !Array.isArray(payload.query)
-      || !Number.isInteger(payload.expires)
-    ) {
-      throw unauthorized();
-    }
-    for (const entry of payload.query) {
-      if (
-        !Array.isArray(entry)
-        || entry.length !== 2
-        || typeof entry[0] !== "string"
-        || typeof entry[1] !== "string"
-        || isSignedUrlParam(entry[0])
-      ) {
-        throw unauthorized();
-      }
-    }
-    if (payload.capability !== undefined && !isValidCapability(payload.capability)) {
-      throw unauthorized();
-    }
-    return payload;
+    return normalizeCompactPayload(payload);
   } catch (error) {
     if (error instanceof KamayError) {
       throw error;
     }
     throw unauthorized();
   }
+}
+
+function buildCompactV1Payload(route, queryEntries, expires, options) {
+  const payload = {
+    v: 1,
+    method: options.method,
+    route,
+    query: queryEntries,
+    expires
+  };
+  if (options.capability) {
+    payload.capability = compactCapability(options.capability);
+  }
+  return payload;
+}
+
+function buildCompactV2Payload(route, queryEntries, expires, options) {
+  const payload = {
+    v: 2,
+    r: routeCodeFor(route),
+    q: shortQuery(queryEntries),
+    e: expires
+  };
+  const capability = compactCapabilityV2(options.capability);
+  if (capability) {
+    payload.c = capability;
+  }
+  return payload;
+}
+
+function normalizeCompactPayload(payload) {
+  if (payload?.v === 1) {
+    return normalizeCompactV1Payload(payload);
+  }
+  if (payload?.v === 2) {
+    return normalizeCompactV2Payload(payload);
+  }
+  throw unauthorized();
+}
+
+function normalizeCompactV1Payload(payload) {
+  if (
+    payload.method !== "GET"
+    || !isValidRoute(payload.route)
+    || !Array.isArray(payload.query)
+    || !Number.isInteger(payload.expires)
+  ) {
+    throw unauthorized();
+  }
+  validateQueryEntries(payload.query);
+  if (payload.capability !== undefined && !isValidCapability(payload.capability)) {
+    throw unauthorized();
+  }
+  return payload;
+}
+
+function normalizeCompactV2Payload(payload) {
+  if (
+    typeof payload.r !== "string"
+    || typeof ROUTE_CODES[payload.r] !== "string"
+    || !isPlainObject(payload.q)
+    || !Number.isInteger(payload.e)
+  ) {
+    throw unauthorized();
+  }
+  const normalized = {
+    v: 2,
+    method: "GET",
+    route: ROUTE_CODES[payload.r],
+    query: expandShortQuery(payload.q),
+    expires: payload.e
+  };
+  if (payload.c !== undefined) {
+    normalized.capability = expandCapabilityV2(payload.c);
+  }
+  return normalized;
 }
 
 function parseExpiry(url) {
@@ -360,6 +450,18 @@ function compactCapability(capability) {
   return compact;
 }
 
+function compactCapabilityV2(capability) {
+  if (!capability) {
+    return null;
+  }
+  const compact = {};
+  setOptionalProperty(compact, "o", operationCodeFor(capability.operation));
+  setOptionalProperty(compact, "p", capability.pathPrefix);
+  setOptionalProperty(compact, "r", capability.ref);
+  setOptionalProperty(compact, "l", capability.label);
+  return Object.keys(compact).length > 0 ? compact : null;
+}
+
 function setOptionalProperty(target, key, value) {
   if (value !== undefined && value !== null && String(value) !== "") {
     target[key] = String(value);
@@ -378,11 +480,117 @@ function isValidCapability(value) {
   ));
 }
 
+function isValidCapabilityV2(value) {
+  if (!isPlainObject(value)) {
+    return false;
+  }
+  const allowedKeys = ["o", "p", "r", "l"];
+  return Object.entries(value).every(([key, entry]) => (
+    allowedKeys.includes(key)
+    && typeof entry === "string"
+    && entry.length > 0
+  ));
+}
+
+function expandCapabilityV2(value) {
+  if (!isValidCapabilityV2(value)) {
+    throw unauthorized();
+  }
+  const capability = {};
+  if (value.o) {
+    capability.operation = operationForCode(value.o);
+  }
+  setOptionalProperty(capability, "pathPrefix", value.p);
+  setOptionalProperty(capability, "ref", value.r);
+  setOptionalProperty(capability, "label", value.l);
+  return capability;
+}
+
+function shortQuery(entries) {
+  const query = {};
+  for (const [key, value] of entries) {
+    if (isSignedUrlParam(key)) {
+      throw unauthorized();
+    }
+    const shortKey = QUERY_TO_KEY[key] ?? key;
+    if (query[shortKey] !== undefined) {
+      throw unauthorized();
+    }
+    query[shortKey] = value;
+  }
+  return query;
+}
+
+function expandShortQuery(query) {
+  const entries = [];
+  for (const [key, value] of Object.entries(query)) {
+    if (typeof value !== "string" || value.length === 0) {
+      throw unauthorized();
+    }
+    const expandedKey = QUERY_KEYS[key] ?? key;
+    if (isSignedUrlParam(expandedKey)) {
+      throw unauthorized();
+    }
+    entries.push([expandedKey, value]);
+  }
+  validateQueryEntries(entries);
+  return entries;
+}
+
+function validateQueryEntries(entries) {
+  for (const entry of entries) {
+    if (
+      !Array.isArray(entry)
+      || entry.length !== 2
+      || typeof entry[0] !== "string"
+      || typeof entry[1] !== "string"
+      || entry[0] === ""
+      || isSignedUrlParam(entry[0])
+    ) {
+      throw unauthorized();
+    }
+  }
+}
+
+function routeCodeFor(route) {
+  if (route.startsWith("/v1/repo/blob/")) {
+    return "b";
+  }
+  const code = ROUTE_TO_CODE[route];
+  if (!code) {
+    throw unauthorized();
+  }
+  return code;
+}
+
+function operationCodeFor(operation) {
+  if (operation === undefined || operation === null || String(operation) === "") {
+    return null;
+  }
+  const code = OPERATION_TO_CODE[operation];
+  if (!code) {
+    throw unauthorized();
+  }
+  return code;
+}
+
+function operationForCode(code) {
+  const operation = OPERATION_CODES[code];
+  if (!operation) {
+    throw unauthorized();
+  }
+  return operation;
+}
+
 function isValidRoute(value) {
   return typeof value === "string"
     && value.startsWith("/")
     && !value.startsWith("//")
     && !value.includes("\\");
+}
+
+function isPlainObject(value) {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
 function isSignedUrlParam(key) {

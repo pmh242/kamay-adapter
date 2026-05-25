@@ -102,13 +102,13 @@ X-Kamay-Token: <token>
 
 Some AI clients can fetch URLs but cannot send custom headers. For those clients, generate a short-lived signed capability URL locally and paste the full URL into the client. Signed capability URLs are GET-only bearer credentials: anyone with the URL can use it until it expires.
 
-Compact capability URLs are preferred for AI web clients because they keep the delegated request inside one opaque `kmy_cap` token. The adapter still supports the legacy exact-query format for backward compatibility.
+Compact capability URLs are preferred for AI web clients because they keep the delegated request inside one opaque `kmy_cap` token. The default compact payload is v2, which uses short route, query, and scope keys to reduce URL length. The adapter still supports compact v1 and the legacy exact-query format for backward compatibility.
 
 Compact URL parameter:
 
 | Name | Description |
 | --- | --- |
-| `kmy_cap` | Base64url JSON payload plus HMAC signature. The payload contains method, route, query, expiry, and optional capability scope. |
+| `kmy_cap` | Base64url JSON payload plus HMAC signature. v2 payloads use short keys; v1 payloads use verbose JSON keys. |
 
 Legacy signed URL parameters:
 
@@ -126,16 +126,18 @@ Generate a signed URL:
 ```powershell
 cd C:\dev\sandbox\kamay-adapter
 $env:KAMAY_SIGNING_SECRET = "<same secret configured in Cloudflare>"
-node scripts/sign-url.js "https://kamay-adapter.epix.workers.dev/v1/repo/file?path=README.md&ref=main" --compact --operation getFile --path-prefix README.md --ref main --label review
+node scripts/sign-url.js "https://adapter.pedroh.dev/v1/repo/file?path=README.md&ref=main" --compact --operation getFile --path-prefix README.md --ref main
 ```
 
 For common ChatGPT/Claude handoffs, use the delegated URL preset helper. By default it prints only sanitized metadata; add `--print-url` when you are ready to paste the bearer URL into the AI client.
 
 ```powershell
-node scripts/delegate-url.js readme --print-url
-node scripts/delegate-url.js docs-tree --print-url
-node scripts/delegate-url.js commits --n 10 --print-url
+node scripts/delegate-url.js readme --base-url https://adapter.pedroh.dev --print-url
+node scripts/delegate-url.js docs-tree --base-url https://adapter.pedroh.dev --print-url
+node scripts/delegate-url.js commits --base-url https://adapter.pedroh.dev --n 10 --print-url
 ```
+
+Add `--label <value>` only when you want optional audit metadata in the signed payload. Add `--compact-v1` to mint the previous verbose compact format, or `--legacy` to mint the older exact-query signed URL format.
 
 For repeated local use, create ignored file `.env.local` in the repo root:
 
@@ -146,13 +148,13 @@ KAMAY_SIGNING_SECRET=<same secret configured in Cloudflare>
 Then run the signer without setting the environment variable each time:
 
 ```powershell
-node scripts/sign-url.js "https://kamay-adapter.epix.workers.dev/v1/repo/file?path=README.md&ref=main" --compact --ttl-seconds 1800
+node scripts/sign-url.js "https://adapter.pedroh.dev/v1/repo/file?path=README.md&ref=main" --compact --ttl-seconds 1800
 ```
 
 Optional TTL:
 
 ```powershell
-node scripts/sign-url.js "https://kamay-adapter.epix.workers.dev/v1/repo/commits?ref=main&n=10" --compact --ttl-seconds 1800
+node scripts/sign-url.js "https://adapter.pedroh.dev/v1/repo/commits?ref=main&n=10" --compact --ttl-seconds 1800
 ```
 
 Rules:
@@ -160,7 +162,8 @@ Rules:
 - Default TTL is 15 minutes.
 - Maximum TTL is 30 minutes.
 - Only GET requests can use signed URL auth.
-- Compact URLs bind the signature to the token payload: method, route, query, expiry, and optional scope.
+- Compact URLs bind the signature to the token payload: route, query, expiry, and optional scope.
+- Compact v2 is shorter than compact v1 and is the default for local helper scripts.
 - Legacy signed URLs bind the signature to the exact path and query parameters.
 - Optional capability scope is signature-bound and checked before backend access.
 - If a signed URL is pasted into chat or logs, treat it as temporarily exposed.

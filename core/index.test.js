@@ -183,6 +183,39 @@ test("compact signed capability GET authorizes matching file path and ref", asyn
     fetchImpl: mockRepositoryFetch()
   });
   const body = await response.json();
+  const payload = compactPayload(signedUrl);
+  assert.equal(payload.v, 2);
+  assert.equal(payload.r, "f");
+  assert.equal(payload.q.p, "docs/status/runtime-baseline.md");
+  assert.equal(payload.c.o, "f");
+  assert.equal(payload.c.l, "review-docs");
+  assert.equal(response.status, 200);
+  assert.equal(body.data.path, "docs/status/runtime-baseline.md");
+});
+
+test("compact-v1 signed capability GET remains supported", async () => {
+  const signedUrl = await signCapabilityUrl(
+    "https://adapter.test/v1/repo/file?path=docs/status/runtime-baseline.md&ref=main",
+    SIGNING_SECRET,
+    {
+      compact: true,
+      compactVersion: 1,
+      capability: {
+        operation: "getFile",
+        pathPrefix: "docs/",
+        ref: "main"
+      }
+    }
+  );
+  const response = await handle(new Request(signedUrl), {
+    ...ENV,
+    fetchImpl: mockRepositoryFetch()
+  });
+  const body = await response.json();
+  const payload = compactPayload(signedUrl);
+
+  assert.equal(payload.v, 1);
+  assert.equal(payload.route, "/v1/repo/file");
   assert.equal(response.status, 200);
   assert.equal(body.data.path, "docs/status/runtime-baseline.md");
 });
@@ -226,18 +259,16 @@ test("compact signed capability GET authorizes matching tree and commits reads",
 
 test("compact signed capability rejects expired and over-max TTL tokens", async () => {
   const expiredUrl = await signCompactToken({
-    v: 1,
-    method: "GET",
-    route: "/v1/repo/capabilities",
-    query: [],
-    expires: Math.floor(Date.now() / 1000) - 1
+    v: 2,
+    r: "cap",
+    q: {},
+    e: Math.floor(Date.now() / 1000) - 1
   });
   const overMaxUrl = await signCompactToken({
-    v: 1,
-    method: "GET",
-    route: "/v1/repo/capabilities",
-    query: [],
-    expires: Math.floor(Date.now() / 1000) + 1801
+    v: 2,
+    r: "cap",
+    q: {},
+    e: Math.floor(Date.now() / 1000) + 3600
   });
 
   const expiredResponse = await handle(new Request(expiredUrl), ENV);
@@ -253,17 +284,16 @@ test("compact signed capability rejects expired and over-max TTL tokens", async 
 
 test("compact signed capability rejects tampered payload or signature", async () => {
   const signedUrl = await signCompactToken({
-    v: 1,
-    method: "GET",
-    route: "/v1/repo/file",
-    query: [["path", "README.md"], ["ref", "main"]],
-    expires: Math.floor(Date.now() / 1000) + 900,
-    capability: { operation: "getFile", pathPrefix: "README.md", ref: "main" }
+    v: 2,
+    r: "f",
+    q: { p: "README.md", r: "main" },
+    e: Math.floor(Date.now() / 1000) + 900,
+    c: { o: "f", p: "README.md", r: "main" }
   });
   const tamperedPayloadUrl = new URL(signedUrl);
   const [payload, signature] = tamperedPayloadUrl.searchParams.get("kmy_cap").split(".");
   const parsed = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
-  parsed.query = [["path", "AGENTS.md"], ["ref", "main"]];
+  parsed.q = { p: "AGENTS.md", r: "main" };
   tamperedPayloadUrl.searchParams.set(
     "kmy_cap",
     `${Buffer.from(JSON.stringify(parsed)).toString("base64url")}.${signature}`
@@ -284,12 +314,11 @@ test("compact signed capability rejects tampered payload or signature", async ()
 
 test("compact signed capability rejects visible route mismatch", async () => {
   const signedUrl = await signCompactToken({
-    v: 1,
-    method: "GET",
-    route: "/v1/repo/file",
-    query: [["path", "README.md"], ["ref", "main"]],
-    expires: Math.floor(Date.now() / 1000) + 900,
-    capability: { operation: "getFile", pathPrefix: "README.md", ref: "main" }
+    v: 2,
+    r: "f",
+    q: { p: "README.md", r: "main" },
+    e: Math.floor(Date.now() / 1000) + 900,
+    c: { o: "f", p: "README.md", r: "main" }
   });
   const url = new URL(signedUrl);
   url.pathname = "/v1/repo/commits";
@@ -303,32 +332,47 @@ test("compact signed capability rejects visible route mismatch", async () => {
 
 test("compact signed capability rejects operation, ref, and path-prefix mismatches", async () => {
   const operationUrl = await signCompactToken({
-    v: 1,
-    method: "GET",
-    route: "/v1/repo/commits",
-    query: [["ref", "main"], ["n", "3"]],
-    expires: Math.floor(Date.now() / 1000) + 900,
-    capability: { operation: "getFile", ref: "main" }
+    v: 2,
+    r: "c",
+    q: { r: "main", n: "3" },
+    e: Math.floor(Date.now() / 1000) + 900,
+    c: { o: "f", r: "main" }
   });
   const refUrl = await signCompactToken({
-    v: 1,
-    method: "GET",
-    route: "/v1/repo/tree",
-    query: [["ref", "dev"], ["path", "docs"]],
-    expires: Math.floor(Date.now() / 1000) + 900,
-    capability: { operation: "getTree", pathPrefix: "docs", ref: "main" }
+    v: 2,
+    r: "t",
+    q: { r: "dev", p: "docs" },
+    e: Math.floor(Date.now() / 1000) + 900,
+    c: { o: "t", p: "docs", r: "main" }
   });
   const pathUrl = await signCompactToken({
-    v: 1,
-    method: "GET",
-    route: "/v1/repo/file",
-    query: [["path", "README.md"], ["ref", "main"]],
-    expires: Math.floor(Date.now() / 1000) + 900,
-    capability: { operation: "getFile", pathPrefix: "docs", ref: "main" }
+    v: 2,
+    r: "f",
+    q: { p: "README.md", r: "main" },
+    e: Math.floor(Date.now() / 1000) + 900,
+    c: { o: "f", p: "docs", r: "main" }
   });
 
   for (const signedUrl of [operationUrl, refUrl, pathUrl]) {
     const response = await handle(new Request(signedUrl), ENV);
+    const body = await response.json();
+    assert.equal(response.status, 401);
+    assert.equal(body.error.code, "UNAUTHORIZED");
+  }
+});
+
+test("compact-v2 rejects malformed route, operation, query, signed params, and capability", async () => {
+  const validExpiry = Math.floor(Date.now() / 1000) + 900;
+  const malformedPayloads = [
+    { v: 2, r: "unknown", q: {}, e: validExpiry },
+    { v: 2, r: "f", q: { p: "README.md", r: "main" }, e: validExpiry, c: { o: "unknown", p: "README.md", r: "main" } },
+    { v: 2, r: "f", q: [["p", "README.md"]], e: validExpiry, c: { o: "f", p: "README.md", r: "main" } },
+    { v: 2, r: "f", q: { kmy_sig: "bad", p: "README.md", r: "main" }, e: validExpiry, c: { o: "f", p: "README.md", r: "main" } },
+    { v: 2, r: "f", q: { p: "README.md", r: "main" }, e: validExpiry, c: { o: 42, p: "README.md", r: "main" } }
+  ];
+
+  for (const payload of malformedPayloads) {
+    const response = await handle(new Request(await signCompactToken(payload)), ENV);
     const body = await response.json();
     assert.equal(response.status, 401);
     assert.equal(body.error.code, "UNAUTHORIZED");
@@ -482,7 +526,30 @@ async function signCompactToken(payload) {
     ["sign"]
   );
   const signature = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(encodedPayload));
-  return `https://adapter.test${payload.route}?kmy_cap=${encodedPayload}.${base64UrlEncode(signature)}`;
+  return `https://adapter.test${routeForPayload(payload)}?kmy_cap=${encodedPayload}.${base64UrlEncode(signature)}`;
+}
+
+function compactPayload(input) {
+  const token = new URL(input).searchParams.get("kmy_cap");
+  const [payload] = token.split(".");
+  return JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
+}
+
+function routeForPayload(payload) {
+  if (payload.route) {
+    return payload.route;
+  }
+  const routes = {
+    h: "/v1/repo/health",
+    cap: "/v1/repo/capabilities",
+    f: "/v1/repo/file",
+    fs: "/v1/repo/files",
+    b: "/v1/repo/blob",
+    t: "/v1/repo/tree",
+    c: "/v1/repo/commits",
+    d: "/v1/repo/diff"
+  };
+  return routes[payload.r] ?? "/v1/repo/file";
 }
 
 function mockRepositoryFetch() {

@@ -11,6 +11,7 @@ const url = args.find((arg) => !arg.startsWith("--"));
 const ttlSeconds = readOption(args, "--ttl-seconds") ?? String(SIGNED_URL_TTL.DEFAULT_SECONDS);
 const method = readOption(args, "--method") ?? "GET";
 const compact = hasFlag(args, "--compact");
+const compactVersion = hasFlag(args, "--compact-v1") ? 1 : 2;
 const capability = {
   operation: readOption(args, "--operation"),
   pathPrefix: readOption(args, "--path-prefix"),
@@ -19,7 +20,7 @@ const capability = {
 };
 
 if (!url) {
-  console.error("Usage: node scripts/sign-url.js <url> [--compact] [--ttl-seconds 900] [--method GET] [--operation getFile] [--path-prefix docs/] [--ref main] [--label review]");
+  console.error("Usage: node scripts/sign-url.js <url> [--compact] [--compact-v1] [--ttl-seconds 900] [--method GET] [--operation getFile] [--path-prefix docs/] [--ref main] [--label review]");
   process.exit(1);
 }
 
@@ -28,6 +29,7 @@ try {
     ttlSeconds,
     method,
     compact,
+    compactVersion,
     capability
   });
   console.log(signed);

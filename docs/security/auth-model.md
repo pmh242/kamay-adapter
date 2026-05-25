@@ -27,7 +27,7 @@ Status: IMPLEMENTED / TESTED.
 
 Signed capability URL auth is secondary and GET-only. The preferred AI-web-client format uses:
 
-- `kmy_cap`: compact bearer token containing a signed payload with method, route, query, expiry, and optional capability scope.
+- `kmy_cap`: compact bearer token containing a signed payload with route, query, expiry, and optional capability scope. Compact payload v2 uses short keys to reduce URL length; compact payload v1 remains accepted for backward compatibility.
 
 The legacy exact-query format remains supported for backward compatibility:
 
@@ -38,7 +38,7 @@ The legacy exact-query format remains supported for backward compatibility:
 - `kmy_cap_ref`: optional ref restriction.
 - `kmy_cap_label`: optional local/operator label for audit context, not authorization identity.
 
-Default TTL is 15 minutes. Maximum TTL is 30 minutes. Signed capability URLs are bearer URLs: anyone holding the URL can use it until expiry. Compact URLs reduce query-canonicalization risk for AI web fetch tools by keeping the delegated request inside the signed token. Capability scope is covered by the signature and is validated before repository backend access.
+Default TTL is 15 minutes. Maximum TTL is 30 minutes. Signed capability URLs are bearer URLs: anyone holding the URL can use it until expiry. Compact URLs reduce query-canonicalization risk for AI web fetch tools by keeping the delegated request inside the signed token. v2 compact URLs also reduce length by using route, query, and operation codes. Capability scope is covered by the signature and is validated before repository backend access.
 
 Authority model:
 

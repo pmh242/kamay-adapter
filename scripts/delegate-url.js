@@ -54,9 +54,10 @@ if (isMain()) {
       ttlSeconds: readOption(args, "--ttl-seconds") ?? String(SIGNED_URL_TTL.DEFAULT_SECONDS),
       ref: readOption(args, "--ref") ?? "main",
       n: readOption(args, "--n") ?? "10",
-      label: readOption(args, "--label") ?? preset,
+      label: readOption(args, "--label"),
       printUrl: hasFlag(args, "--print-url"),
-      legacy: hasFlag(args, "--legacy")
+      legacy: hasFlag(args, "--legacy"),
+      compactVersion: hasFlag(args, "--compact-v1") ? 1 : 2
     });
     console.log(JSON.stringify(result, null, 2));
   } catch (error) {
@@ -90,7 +91,9 @@ export async function mintDelegatedCapability(presetName, options = {}) {
     String(options.ttlSeconds ?? SIGNED_URL_TTL.DEFAULT_SECONDS),
     10
   );
-  const label = String(options.label ?? presetName);
+  const label = options.label === undefined || options.label === null
+    ? null
+    : String(options.label);
   const baseUrl = normalizeBaseUrl(options.baseUrl ?? DEFAULT_BASE_URL);
   const query = preset.query({ ref, n });
   const url = new URL(preset.path, baseUrl);
@@ -101,6 +104,7 @@ export async function mintDelegatedCapability(presetName, options = {}) {
   const signedUrl = await signUrl(url.toString(), options.signingSecret, {
     ttlSeconds,
     compact: !options.legacy,
+    compactVersion: options.compactVersion ?? 2,
     capability: preset.capability({ ref, label })
   });
 
@@ -121,7 +125,7 @@ export async function mintDelegatedCapability(presetName, options = {}) {
   const result = {
     status: "PASS",
     preset: presetName,
-    format: options.legacy ? "legacy" : "compact",
+    format: options.legacy ? "legacy" : `compact-v${options.compactVersion ?? 2}`,
     urlPrinted: Boolean(options.printUrl),
     target,
     message: options.printUrl
@@ -152,7 +156,7 @@ function isMain() {
 }
 
 function printUsage(exitCode) {
-  console.error("Usage: node scripts/delegate-url.js <readme|docs-tree|commits> [--legacy] [--print-url] [--ttl-seconds 900] [--ref main] [--n 10] [--label label] [--base-url URL]");
+  console.error("Usage: node scripts/delegate-url.js <readme|docs-tree|commits> [--legacy] [--compact-v1] [--print-url] [--ttl-seconds 900] [--ref main] [--n 10] [--label label] [--base-url URL]");
   process.exit(exitCode);
 }
 
