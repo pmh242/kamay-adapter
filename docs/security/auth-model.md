@@ -25,7 +25,11 @@ The runtime injects `KAMAY_TOKEN`. Missing config returns `INTERNAL_ERROR`. Miss
 
 Status: IMPLEMENTED / TESTED.
 
-Signed capability URL auth is secondary and GET-only. It uses:
+Signed capability URL auth is secondary and GET-only. The preferred AI-web-client format uses:
+
+- `kmy_cap`: compact bearer token containing a signed payload with method, route, query, expiry, and optional capability scope.
+
+The legacy exact-query format remains supported for backward compatibility:
 
 - `kmy_expires`: Unix timestamp in seconds.
 - `kmy_sig`: HMAC-SHA-256 signature over method, path, and sorted query string excluding `kmy_sig`.
@@ -34,7 +38,7 @@ Signed capability URL auth is secondary and GET-only. It uses:
 - `kmy_cap_ref`: optional ref restriction.
 - `kmy_cap_label`: optional local/operator label for audit context, not authorization identity.
 
-Default TTL is 15 minutes. Maximum TTL is 30 minutes. Signed capability URLs are exact-request bearer URLs: anyone holding the URL can use it until expiry. Capability parameters are covered by the signature and are validated before repository backend access.
+Default TTL is 15 minutes. Maximum TTL is 30 minutes. Signed capability URLs are bearer URLs: anyone holding the URL can use it until expiry. Compact URLs reduce query-canonicalization risk for AI web fetch tools by keeping the delegated request inside the signed token. Capability scope is covered by the signature and is validated before repository backend access.
 
 Authority model:
 

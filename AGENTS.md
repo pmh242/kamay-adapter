@@ -60,7 +60,7 @@ Durable rules override only with an explicit task contract.
 - Stub backend rate limit metadata uses the null shape.
 - `X-Kamay-Token` auth is validated before route dispatch.
 - Signed URL auth is secondary, GET-only, short-lived, and exact-request.
-- Signed URLs use `kmy_expires` and `kmy_sig`.
+- Signed URLs support compact `kmy_cap` tokens and legacy `kmy_expires` + `kmy_sig`.
 - Signed capability URLs may also use `kmy_cap_op`, `kmy_cap_path_prefix`, `kmy_cap_ref`, and `kmy_cap_label`.
 - Capability scope parameters must be covered by the HMAC and validated before backend access.
 - Signed URL TTL defaults to 15 minutes and must not exceed 30 minutes.

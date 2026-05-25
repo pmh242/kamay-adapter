@@ -14,6 +14,7 @@ test("readme preset mints a scoped capability URL but hides it by default", asyn
 
   assert.equal(result.status, "PASS");
   assert.equal(result.preset, "readme");
+  assert.equal(result.format, "compact");
   assert.equal(result.urlPrinted, false);
   assert.equal(result.url, undefined);
   assert.equal(result.target.operation, "getFile");
@@ -31,8 +32,12 @@ test("print-url option explicitly includes a valid bearer URL", async () => {
   assert.equal(result.status, "PASS");
   assert.equal(result.urlPrinted, true);
   assert.match(result.url, /^https:\/\/adapter\.test\/v1\/repo\/tree\?/);
-  assert.match(result.url, /kmy_cap_op=getTree/);
-  await validateSignedUrl(new Request(result.url), SIGNING_SECRET);
+  assert.match(result.url, /kmy_cap=/);
+  assert.doesNotMatch(result.url, /kmy_cap_op=getTree/);
+  const routedRequest = await validateSignedUrl(new Request(result.url), SIGNING_SECRET);
+  const routedUrl = new URL(routedRequest.url);
+  assert.equal(routedUrl.pathname, "/v1/repo/tree");
+  assert.equal(routedUrl.searchParams.get("path"), "docs");
 });
 
 test("commits preset does not add path-prefix scope", async () => {
@@ -44,8 +49,28 @@ test("commits preset does not add path-prefix scope", async () => {
     n: 5
   });
   const url = new URL(result.url);
+  const token = url.searchParams.get("kmy_cap");
 
-  assert.equal(url.searchParams.get("kmy_cap_op"), "getCommits");
+  assert.ok(token);
   assert.equal(url.searchParams.has("kmy_cap_path_prefix"), false);
-  assert.equal(url.searchParams.get("n"), "5");
+  const routedRequest = await validateSignedUrl(new Request(result.url), SIGNING_SECRET);
+  const routedUrl = new URL(routedRequest.url);
+  assert.equal(routedUrl.searchParams.get("n"), "5");
+});
+
+test("legacy option produces the old exact-query signed URL format", async () => {
+  const result = await mintDelegatedCapability("readme", {
+    baseUrl: "https://adapter.test",
+    signingSecret: SIGNING_SECRET,
+    ttlSeconds: 300,
+    printUrl: true,
+    legacy: true
+  });
+  const url = new URL(result.url);
+
+  assert.equal(result.format, "legacy");
+  assert.equal(url.searchParams.has("kmy_cap"), false);
+  assert.equal(url.searchParams.get("kmy_cap_op"), "getFile");
+  assert.equal(url.searchParams.get("path"), "README.md");
+  await validateSignedUrl(new Request(result.url), SIGNING_SECRET);
 });

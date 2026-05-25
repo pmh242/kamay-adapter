@@ -10,6 +10,7 @@ const args = process.argv.slice(2);
 const url = args.find((arg) => !arg.startsWith("--"));
 const ttlSeconds = readOption(args, "--ttl-seconds") ?? String(SIGNED_URL_TTL.DEFAULT_SECONDS);
 const method = readOption(args, "--method") ?? "GET";
+const compact = hasFlag(args, "--compact");
 const capability = {
   operation: readOption(args, "--operation"),
   pathPrefix: readOption(args, "--path-prefix"),
@@ -18,7 +19,7 @@ const capability = {
 };
 
 if (!url) {
-  console.error("Usage: node scripts/sign-url.js <url> [--ttl-seconds 900] [--method GET] [--operation getFile] [--path-prefix docs/] [--ref main] [--label review]");
+  console.error("Usage: node scripts/sign-url.js <url> [--compact] [--ttl-seconds 900] [--method GET] [--operation getFile] [--path-prefix docs/] [--ref main] [--label review]");
   process.exit(1);
 }
 
@@ -26,6 +27,7 @@ try {
   const signed = await signUrl(url, process.env.KAMAY_SIGNING_SECRET, {
     ttlSeconds,
     method,
+    compact,
     capability
   });
   console.log(signed);
@@ -37,6 +39,10 @@ try {
 function readOption(values, name) {
   const index = values.indexOf(name);
   return index === -1 ? null : values[index + 1] ?? null;
+}
+
+function hasFlag(values, name) {
+  return values.includes(name);
 }
 
 function loadLocalEnv() {

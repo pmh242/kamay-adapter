@@ -15,14 +15,15 @@ export async function handle(request, env = {}) {
     if (request.method === "OPTIONS") {
       return optionsResponse();
     }
+    let routedRequest = request;
     if (request.headers.has("X-Kamay-Token")) {
       validateToken(request, env.KAMAY_TOKEN);
     } else if (hasSignedUrlParams(request)) {
-      await validateSignedUrl(request, env.KAMAY_SIGNING_SECRET);
+      routedRequest = await validateSignedUrl(request, env.KAMAY_SIGNING_SECRET);
     } else {
       validateToken(request, env.KAMAY_TOKEN);
     }
-    return await router(request, env, ctx);
+    return await router(routedRequest, env, ctx);
   } catch (error) {
     return jsonError(error, ctx);
   }

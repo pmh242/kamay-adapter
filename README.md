@@ -102,7 +102,15 @@ X-Kamay-Token: <token>
 
 Some AI clients can fetch URLs but cannot send custom headers. For those clients, generate a short-lived signed capability URL locally and paste the full URL into the client. Signed capability URLs are GET-only bearer credentials: anyone with the URL can use it until it expires.
 
-Signed URL parameters:
+Compact capability URLs are preferred for AI web clients because they keep the delegated request inside one opaque `kmy_cap` token. The adapter still supports the legacy exact-query format for backward compatibility.
+
+Compact URL parameter:
+
+| Name | Description |
+| --- | --- |
+| `kmy_cap` | Base64url JSON payload plus HMAC signature. The payload contains method, route, query, expiry, and optional capability scope. |
+
+Legacy signed URL parameters:
 
 | Name | Description |
 | --- | --- |
@@ -118,7 +126,7 @@ Generate a signed URL:
 ```powershell
 cd C:\dev\sandbox\kamay-adapter
 $env:KAMAY_SIGNING_SECRET = "<same secret configured in Cloudflare>"
-node scripts/sign-url.js "https://kamay-adapter.epix.workers.dev/v1/repo/file?path=README.md&ref=main" --operation getFile --path-prefix README.md --ref main --label review
+node scripts/sign-url.js "https://kamay-adapter.epix.workers.dev/v1/repo/file?path=README.md&ref=main" --compact --operation getFile --path-prefix README.md --ref main --label review
 ```
 
 For common ChatGPT/Claude handoffs, use the delegated URL preset helper. By default it prints only sanitized metadata; add `--print-url` when you are ready to paste the bearer URL into the AI client.
@@ -138,13 +146,13 @@ KAMAY_SIGNING_SECRET=<same secret configured in Cloudflare>
 Then run the signer without setting the environment variable each time:
 
 ```powershell
-node scripts/sign-url.js "https://kamay-adapter.epix.workers.dev/v1/repo/file?path=README.md&ref=main" --ttl-seconds 1800
+node scripts/sign-url.js "https://kamay-adapter.epix.workers.dev/v1/repo/file?path=README.md&ref=main" --compact --ttl-seconds 1800
 ```
 
 Optional TTL:
 
 ```powershell
-node scripts/sign-url.js "https://kamay-adapter.epix.workers.dev/v1/repo/commits?ref=main&n=10" --ttl-seconds 1800
+node scripts/sign-url.js "https://kamay-adapter.epix.workers.dev/v1/repo/commits?ref=main&n=10" --compact --ttl-seconds 1800
 ```
 
 Rules:
@@ -152,8 +160,9 @@ Rules:
 - Default TTL is 15 minutes.
 - Maximum TTL is 30 minutes.
 - Only GET requests can use signed URL auth.
-- The signature is bound to the exact path and query parameters.
-- Optional capability parameters are also signature-bound and checked before backend access.
+- Compact URLs bind the signature to the token payload: method, route, query, expiry, and optional scope.
+- Legacy signed URLs bind the signature to the exact path and query parameters.
+- Optional capability scope is signature-bound and checked before backend access.
 - If a signed URL is pasted into chat or logs, treat it as temporarily exposed.
 
 ## API reference

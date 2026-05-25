@@ -55,7 +55,8 @@ if (isMain()) {
       ref: readOption(args, "--ref") ?? "main",
       n: readOption(args, "--n") ?? "10",
       label: readOption(args, "--label") ?? preset,
-      printUrl: hasFlag(args, "--print-url")
+      printUrl: hasFlag(args, "--print-url"),
+      legacy: hasFlag(args, "--legacy")
     });
     console.log(JSON.stringify(result, null, 2));
   } catch (error) {
@@ -99,6 +100,7 @@ export async function mintDelegatedCapability(presetName, options = {}) {
 
   const signedUrl = await signUrl(url.toString(), options.signingSecret, {
     ttlSeconds,
+    compact: !options.legacy,
     capability: preset.capability({ ref, label })
   });
 
@@ -119,6 +121,7 @@ export async function mintDelegatedCapability(presetName, options = {}) {
   const result = {
     status: "PASS",
     preset: presetName,
+    format: options.legacy ? "legacy" : "compact",
     urlPrinted: Boolean(options.printUrl),
     target,
     message: options.printUrl
@@ -149,7 +152,7 @@ function isMain() {
 }
 
 function printUsage(exitCode) {
-  console.error("Usage: node scripts/delegate-url.js <readme|docs-tree|commits> [--print-url] [--ttl-seconds 900] [--ref main] [--n 10] [--label label] [--base-url URL]");
+  console.error("Usage: node scripts/delegate-url.js <readme|docs-tree|commits> [--legacy] [--print-url] [--ttl-seconds 900] [--ref main] [--n 10] [--label label] [--base-url URL]");
   process.exit(exitCode);
 }
 
