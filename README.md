@@ -10,6 +10,15 @@ Provider-agnostic repository cognition substrate for AI systems.
 
 v0.1.0 is read-only. The GitHub backend implements all RepositoryProvider read operations. GitLab, Gitea, and local filesystem backends are registered but intentionally stubbed with `NOT_IMPLEMENTED` behavior. MCP is documented as a deferred deployment target.
 
+## Documentation
+
+- [Architecture overview](docs/architecture/overview.md) - current core shape, request flow, and runtime shims.
+- [Boundaries](docs/architecture/boundaries.md) - what each layer owns and must not own.
+- [MVP definition](docs/implementation/mvp-definition.md) - implemented, tested, deferred, and out-of-scope behavior.
+- [Implementation matrix](docs/status/implementation-matrix.md) - current status by subsystem.
+- [Auth model](docs/security/auth-model.md) - header auth, signed URLs, and secret handling.
+- [vnext roadmap](vnext/roadmap/vnext-roadmap.md) - non-authoritative future direction.
+
 ## Architecture diagram
 
 ```text
