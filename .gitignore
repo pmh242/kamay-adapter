@@ -7,4 +7,5 @@ deployments/cloudflare-worker/dist-debug/
 .env.local
 smoke-stdout.txt
 smoke-stderr.txt
+tmp/
 npm-debug.log*
