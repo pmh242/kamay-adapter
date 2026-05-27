@@ -4,7 +4,7 @@ Provider-agnostic repository cognition substrate for AI systems.
 
 ## What this is
 
-`kamay-adapter` is a small read layer that exposes repository context through stable HTTP endpoints. It exists so AI systems can fetch files, trees, commits, blobs, diffs, and capabilities without depending on one vendor's repository connector. v0.1.0 implements the RepositoryProvider taxonomy only. The core is framework-free and deployment-portable by design.
+`kamay-adapter` is a vendor-independent repository context bridge for AI chatbots and coding agents. It gives AI systems controlled remote eyes on repository state through stable, read-only HTTP endpoints and short-lived delegated capability URLs. v0.1.0 implements the RepositoryProvider taxonomy only. The core is framework-free and deployment-portable by design.
 
 ## Status
 
@@ -13,6 +13,7 @@ v0.1.0 is read-only. The GitHub backend implements all RepositoryProvider read o
 ## Documentation
 
 - [Architecture overview](docs/architecture/overview.md) - current core shape, request flow, and runtime shims.
+- [Project thesis](docs/architecture/thesis.md) - authoritative project identity and non-goals.
 - [Boundaries](docs/architecture/boundaries.md) - what each layer owns and must not own.
 - [MVP definition](docs/implementation/mvp-definition.md) - implemented, tested, deferred, and out-of-scope behavior.
 - [Implementation matrix](docs/status/implementation-matrix.md) - current status by subsystem.

@@ -40,6 +40,8 @@ Status: CURRENT DESIGN INTENT.
 
 The adapter is not coupled to Kamay runtime state, `.kamay` folders, or Kamay being installed. `KAMAY_REPO=pmh242/kamay` is configuration, not a hard dependency.
 
+The [Project Thesis](thesis.md) defines Adapter identity. It does not expand Adapter into Kamay main, orchestration, marketplace, autonomous execution, or write authority.
+
 In the Kamay ecosystem, Kamay main owns local OS/kernel responsibilities: local workspace authority, governance, memory, contract interpretation, and MCP/kernel orchestration. Kamay Adapter owns remote repository context exposure: a safe, read-only driver/delegation layer that lets AI systems ask for repository files, trees, commits, blobs, and diffs through protocol boundaries.
 
 Kamay Adapter must not absorb Kamay's MCP kernel, memory system, governance model, contract engine, or local workspace authority. Kamay must not depend on adapter internals. Integration should happen through stable HTTP/API contracts and explicit configuration, not shared mutable runtime state.

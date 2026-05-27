@@ -4,6 +4,8 @@ Status: IMPLEMENTED in repo. Runtime deployment state must be verified separatel
 
 `kamay-adapter` is a provider-agnostic, read-only repository cognition adapter. It exposes a stable HTTP API that AI clients can call without depending on a vendor-specific repository connector.
 
+The authoritative project identity is defined in [Project Thesis](thesis.md); this overview owns current architecture and runtime shape.
+
 Within the broader Kamay ecosystem, Kamay main is the local OS/kernel and governance layer, Kamay Adapter is the remote repo-read driver/delegation layer, and Kamay-X projects are isolated apps, drivers, capabilities, or integrations. These parts should integrate through explicit protocol contracts rather than shared mutable runtime state.
 
 ```text
