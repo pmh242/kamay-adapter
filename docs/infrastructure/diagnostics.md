@@ -81,6 +81,9 @@ The export is one JSON object with:
 The export is intended for local operator inspection and future Kamay UI
 display-only status surfaces.
 
+For AI handoff, a diagnostics export can be transformed into a portable
+evidence context packet. See [Evidence Context](evidence-context.md).
+
 ## Redaction Rules
 
 Diagnostics must never print or export:
