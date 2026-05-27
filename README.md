@@ -1,33 +1,71 @@
 # kamay-adapter
 
-Provider-agnostic repository cognition substrate for AI systems.
+Vendor-independent repository context bridge for AI systems.
 
-## What this is
+- Read-only repository context over stable HTTP endpoints.
+- Short-lived delegated capability URLs for AI clients that cannot send headers.
+- Local diagnostics and evidence packets for operational proof without broad authority.
 
-`kamay-adapter` is a vendor-independent repository context bridge for AI chatbots and coding agents. It gives AI systems controlled remote eyes on repository state through stable, read-only HTTP endpoints and short-lived delegated capability URLs. v0.1.0 implements the RepositoryProvider taxonomy only. The core is framework-free and deployment-portable by design.
+Status: v0.1.0 implements the GitHub RepositoryProvider backend. GitLab, Gitea,
+and local filesystem backends are registered stubs. MCP is deferred.
 
-## Status
+## What It Is
 
-v0.1.0 is read-only. The GitHub backend implements all RepositoryProvider read operations. GitLab, Gitea, and local filesystem backends are registered but intentionally stubbed with `NOT_IMPLEMENTED` behavior. MCP is documented as a deferred deployment target.
+`kamay-adapter` gives AI chatbots and coding agents controlled remote eyes on
+repository state without depending on a single vendor connector. The adapter is
+small by design: it exposes bounded repository context and leaves approval,
+governance, execution, and product decisions outside the adapter.
 
-## Documentation
+It is not Kamay main, an orchestration engine, an autonomous runtime, a plugin
+marketplace, or a write gateway.
 
-- [Architecture overview](docs/architecture/overview.md) - current core shape, request flow, and runtime shims.
-- [Project thesis](docs/architecture/thesis.md) - authoritative project identity and non-goals.
-- [Boundaries](docs/architecture/boundaries.md) - what each layer owns and must not own.
-- [MVP definition](docs/implementation/mvp-definition.md) - implemented, tested, deferred, and out-of-scope behavior.
-- [Implementation matrix](docs/status/implementation-matrix.md) - current status by subsystem.
-- [Install contract](docs/infrastructure/install-contract.md) - minimal standalone and future Kamay integration contract.
-- [Diagnostics](docs/infrastructure/diagnostics.md) - local status and redacted bug-export workflow.
-- [Auth model](docs/security/auth-model.md) - header auth, signed URLs, and secret handling.
-- [vnext roadmap](vnext/roadmap/vnext-roadmap.md) - non-authoritative future direction.
+## Why It Exists
 
-## Architecture diagram
+Hosted AI repository connectors are inconsistent. Some cannot read private
+repos, send custom headers, survive URL rewriting, pass host allowlists, or show
+clear operational status.
+
+Kamay Adapter provides a portable layer instead: a framework-free HTTP read API,
+signed read-only delegation, and local verification artifacts an operator can
+inspect before handing context to an AI system.
+
+## Quickstart
+
+Run the local test suite:
+
+```powershell
+npm test
+```
+
+Deploy or run a target runtime, then verify it locally:
+
+```powershell
+node scripts/diagnostics.js status
+```
+
+Build a redacted diagnostics export and evidence packet:
+
+```powershell
+node scripts/diagnostics.js export --out tmp/diagnostics/latest.json
+node scripts/evidence.js build --diagnostics tmp/diagnostics/latest.json --out tmp/evidence/latest.json
+```
+
+Mint a delegated README capability URL for a human-approved AI handoff:
+
+```powershell
+node scripts/delegate-url.js readme --base-url <adapter-url>
+```
+
+Add `--print-url` only when you intentionally need to reveal the short-lived
+bearer URL. See [Auth Model](docs/security/auth-model.md) and
+[Install Contract](docs/infrastructure/install-contract.md) for full setup.
+
+## Architecture Overview
 
 ```text
-AI clients
+AI client / local agent
   |
-  | web_fetch / HTTP
+  | HTTP, header auth, or signed GET capability URL
   v
 kamay-adapter
   |
@@ -42,33 +80,58 @@ RepositoryProvider
   +-- local backend (stub)
 ```
 
-## Design philosophy
+The core uses standard `Request`, `Response`, and `fetch` so Cloudflare Worker
+and Node shims can adapt runtimes without framework coupling. Provider behavior
+is tested through conformance rather than inheritance.
 
-### Provider vs Service vs Subsystem
+## Current Implementation Status
 
-A provider is an external capability family with a stable consumer contract. In v0.1.0, the only provider is RepositoryProvider. A service is internal adapter machinery such as auth, envelope creation, error mapping, and request ID generation. A subsystem is an application-specific domain inside a consuming project; `kamay-adapter` does not model those.
+| Area | Status |
+| --- | --- |
+| RepositoryProvider HTTP API | Implemented and tested under `/v1/repo/*` |
+| GitHub backend | Implemented and tested for health, capabilities, files, blobs, trees, commits, and diffs |
+| GitLab, Gitea, local backends | Registered stubs returning `NOT_IMPLEMENTED` |
+| Header auth | Implemented for operator and server-to-server requests |
+| Signed capability URLs | Implemented, tested, deployed in prior verification, GET-only |
+| Diagnostics | Implemented as local operator workflow |
+| Evidence context | Implemented as local packet builder, not remote serving |
+| Cloudflare Worker | Deployable target; deployed state must be verified separately |
+| Node server | Local/simple self-host shim |
+| MCP server | Deferred documentation-only target |
 
-### Why no abstract classes
+## Documentation
 
-The project tests behavior rather than inheritance. Backends prove compatibility by declaring capabilities and passing the conformance suite. This keeps the contract portable across plain JavaScript objects, runtime shims, and future transport layers.
+Understand:
 
-### Why URL versioning
+- [Project Thesis](docs/architecture/thesis.md) - authoritative identity and non-goals.
+- [Architecture Overview](docs/architecture/overview.md) - current core shape, request flow, and runtime shims.
+- [Boundaries](docs/architecture/boundaries.md) - ownership boundaries and what the adapter must not absorb.
 
-Consumers stick to URLs. The v1 contract lives under `/v1/repo/*` so clients can keep stable fetch targets while internal files and deployment targets evolve.
+Operate:
 
-### Why pure functions, no framework
+- [Install Contract](docs/infrastructure/install-contract.md) - standalone and future Kamay integration lifecycle.
+- [Auth Model](docs/security/auth-model.md) - header auth, signed URLs, and secret handling.
+- [Diagnostics](docs/infrastructure/diagnostics.md) - local status and redacted bug-export workflow.
+- [Evidence Context](docs/infrastructure/evidence-context.md) - portable local evidence packets.
 
-The core uses standard `Request`, `Response`, and `fetch` so it can run in Cloudflare Workers, Node, and future MCP shims with minimal glue. No framework means fewer runtime assumptions and no dependency surface in the adapter core.
+Status and future:
 
-## Deployment matrix
+- [Implementation Matrix](docs/status/implementation-matrix.md) - current status by subsystem.
+- [Runtime Baseline](docs/status/runtime-baseline.md) - repo-visible runtime truth.
+- [MVP Definition](docs/implementation/mvp-definition.md) - implemented, tested, deferred, and out-of-scope behavior.
+- [vnext Roadmap](vnext/roadmap/vnext-roadmap.md) - non-authoritative future direction.
+
+## Reference
+
+### Deployment Targets
 
 | Target | Status | Use case |
 | --- | --- | --- |
-| `cloudflare-worker` | Ready | Public stable URL for AI clients using `web_fetch` |
+| `cloudflare-worker` | Ready | Public stable URL for AI clients using URL fetch |
 | `node-server` | Ready | Local smoke testing and simple self-hosting |
-| `mcp-server` | Deferred | Phase 7 MCP tool surface for Claude Desktop and remote clients |
+| `mcp-server` | Deferred | Future MCP tool surface |
 
-## Deploy guide
+### Cloudflare Deploy
 
 ```powershell
 cd deployments/cloudflare-worker
@@ -78,7 +141,7 @@ npx wrangler secret put KAMAY_SIGNING_SECRET
 npx wrangler deploy
 ```
 
-## Configuration reference
+### Configuration
 
 | Name | Location | Required | Description |
 | --- | --- | --- | --- |
@@ -86,92 +149,27 @@ npx wrangler deploy
 | `KAMAY_SIGNING_SECRET` | Secret | Yes for signed URLs | HMAC secret used to verify short-lived signed GET URLs |
 | `GITHUB_TOKEN` | Secret | Yes for GitHub | GitHub token used for upstream API reads |
 | `KAMAY_SOURCE` | Env var | No | Backend source. Defaults to `github` |
-| `KAMAY_REPO` | Env var | Yes for GitHub | Repository slug such as `pmh242/kamay` |
+| `KAMAY_REPO` | Env var | Yes for GitHub | Repository slug such as `owner/name` |
 | `PORT` | Node env var | No | Node server port. Defaults to `8766` |
 
-Generate a token:
+### Signed Capability URLs
 
-```powershell
-node -e "console.log(crypto.randomUUID() + crypto.randomUUID())"
-```
+Signed capability URLs are secondary auth for AI clients that can fetch URLs but
+cannot send custom headers. They are GET-only bearer credentials: anyone with
+the URL can use it until it expires.
 
-Send it on every non-OPTIONS request:
-
-```http
-X-Kamay-Token: <token>
-```
-
-### Signed capability URL auth for Claude/web_fetch
-
-Some AI clients can fetch URLs but cannot send custom headers. For those clients, generate a short-lived signed capability URL locally and paste the full URL into the client. Signed capability URLs are GET-only bearer credentials: anyone with the URL can use it until it expires.
-
-Compact capability URLs are preferred for AI web clients because they keep the delegated request inside one opaque `kmy_cap` token. The default compact payload is v2, which uses short route, query, and scope keys to reduce URL length. The adapter still supports compact v1 and the legacy exact-query format for backward compatibility.
-
-Compact URL parameter:
-
-| Name | Description |
-| --- | --- |
-| `kmy_cap` | Base64url JSON payload plus HMAC signature. v2 payloads use short keys; v1 payloads use verbose JSON keys. |
-
-Legacy signed URL parameters:
-
-| Name | Description |
-| --- | --- |
-| `kmy_expires` | Unix timestamp in seconds. The adapter rejects expired URLs and URLs more than 30 minutes in the future. |
-| `kmy_sig` | Base64url HMAC-SHA-256 signature over the method, path, and sorted query string. |
-| `kmy_cap_op` | Optional operation restriction, such as `getFile` or `getTree`. |
-| `kmy_cap_path_prefix` | Optional path prefix restriction for file, files, and tree reads. |
-| `kmy_cap_ref` | Optional ref restriction. |
-| `kmy_cap_label` | Optional operator label. Not an identity or authorization source. |
-
-Generate a signed URL:
-
-```powershell
-cd C:\dev\sandbox\kamay-adapter
-$env:KAMAY_SIGNING_SECRET = "<same secret configured in Cloudflare>"
-node scripts/sign-url.js "https://adapter.pedroh.dev/v1/repo/file?path=README.md&ref=main" --compact --operation getFile --path-prefix README.md --ref main
-```
-
-For common ChatGPT/Claude handoffs, use the delegated URL preset helper. By default it prints only sanitized metadata; add `--print-url` when you are ready to paste the bearer URL into the AI client.
-
-```powershell
-node scripts/delegate-url.js readme --base-url https://adapter.pedroh.dev --print-url
-node scripts/delegate-url.js docs-tree --base-url https://adapter.pedroh.dev --print-url
-node scripts/delegate-url.js commits --base-url https://adapter.pedroh.dev --n 10 --print-url
-```
-
-Add `--label <value>` only when you want optional audit metadata in the signed payload. Add `--compact-v1` to mint the previous verbose compact format, or `--legacy` to mint the older exact-query signed URL format.
-
-For repeated local use, create ignored file `.env.local` in the repo root:
-
-```text
-KAMAY_SIGNING_SECRET=<same secret configured in Cloudflare>
-```
-
-Then run the signer without setting the environment variable each time:
-
-```powershell
-node scripts/sign-url.js "https://adapter.pedroh.dev/v1/repo/file?path=README.md&ref=main" --compact --ttl-seconds 1800
-```
-
-Optional TTL:
-
-```powershell
-node scripts/sign-url.js "https://adapter.pedroh.dev/v1/repo/commits?ref=main&n=10" --compact --ttl-seconds 1800
-```
+Compact `kmy_cap` URLs are preferred. Compact v2 is the default helper format;
+compact v1 and legacy `kmy_expires` + `kmy_sig` URLs remain backward compatible.
 
 Rules:
 
 - Default TTL is 15 minutes.
 - Maximum TTL is 30 minutes.
 - Only GET requests can use signed URL auth.
-- Compact URLs bind the signature to the token payload: route, query, expiry, and optional scope.
-- Compact v2 is shorter than compact v1 and is the default for local helper scripts.
-- Legacy signed URLs bind the signature to the exact path and query parameters.
-- Optional capability scope is signature-bound and checked before backend access.
+- Capability scope is signature-bound and checked before backend access.
 - If a signed URL is pasted into chat or logs, treat it as temporarily exposed.
 
-## API reference
+### API Reference
 
 All successful and error responses use the envelope shape documented below. All examples assume:
 
@@ -179,7 +177,7 @@ All successful and error responses use the envelope shape documented below. All 
 X-Kamay-Token: kmy_dev_token
 ```
 
-### GET /health
+#### GET /health
 
 ```http
 GET /health
@@ -204,7 +202,7 @@ GET /health
 }
 ```
 
-### GET /v1/repo/health
+#### GET /v1/repo/health
 
 ```http
 GET /v1/repo/health
@@ -235,7 +233,7 @@ GET /v1/repo/health
 }
 ```
 
-### GET /v1/repo/capabilities
+#### GET /v1/repo/capabilities
 
 ```http
 GET /v1/repo/capabilities
@@ -275,7 +273,7 @@ GET /v1/repo/capabilities
 }
 ```
 
-### GET /v1/repo/file
+#### GET /v1/repo/file
 
 ```http
 GET /v1/repo/file?path=README.md&ref=main
@@ -307,7 +305,7 @@ GET /v1/repo/file?path=README.md&ref=main
 }
 ```
 
-### GET /v1/repo/files
+#### GET /v1/repo/files
 
 ```http
 GET /v1/repo/files?paths=README.md,AGENTS.md&ref=main
@@ -347,7 +345,7 @@ GET /v1/repo/files?paths=README.md,AGENTS.md&ref=main
 }
 ```
 
-### POST /v1/repo/files
+#### POST /v1/repo/files
 
 ```http
 POST /v1/repo/files
@@ -358,7 +356,7 @@ Content-Type: application/json
 
 The response shape is the same as `GET /v1/repo/files`.
 
-### GET /v1/repo/blob/:sha
+#### GET /v1/repo/blob/:sha
 
 ```http
 GET /v1/repo/blob/def4567890abcdef1234567890abcdef1234567
@@ -388,7 +386,7 @@ GET /v1/repo/blob/def4567890abcdef1234567890abcdef1234567
 }
 ```
 
-### GET /v1/repo/tree
+#### GET /v1/repo/tree
 
 ```http
 GET /v1/repo/tree?ref=main&path=core
@@ -433,7 +431,7 @@ GET /v1/repo/tree?ref=main&path=core
 }
 ```
 
-### GET /v1/repo/commits
+#### GET /v1/repo/commits
 
 ```http
 GET /v1/repo/commits?ref=main&n=10
@@ -473,7 +471,7 @@ GET /v1/repo/commits?ref=main&n=10
 }
 ```
 
-### GET /v1/repo/diff
+#### GET /v1/repo/diff
 
 ```http
 GET /v1/repo/diff?sha=abc1234567890abcdef1234567890abcdef1234
@@ -520,7 +518,7 @@ GET /v1/repo/diff?sha=abc1234567890abcdef1234567890abcdef1234
 }
 ```
 
-## Envelope shape
+### Envelope Shape
 
 Success:
 
@@ -574,7 +572,7 @@ Content-Type: application/json; charset=utf-8
 Cache-Control: no-store
 ```
 
-## Error code catalog
+### Error Code Catalog
 
 | Code | HTTP | Meaning |
 | --- | ---: | --- |
@@ -589,7 +587,7 @@ Cache-Control: no-store
 | `TIMEOUT` | 504 | Backend took too long |
 | `PAYLOAD_TOO_LARGE` | 413 | Response would exceed configured limits |
 
-## Response size limits
+### Response Size Limits
 
 | Limit | Value | Applies to |
 | --- | ---: | --- |
@@ -600,11 +598,11 @@ Cache-Control: no-store
 | `MAX_TREE_ENTRIES` | 5000 | `/tree` file results |
 | `MAX_COMMITS` | 30 | `/commits` per request |
 
-## Versioning policy
+### Versioning Policy
 
 The public API is URL-versioned. Repository routes live under `/v1/repo/*`; the top-level adapter health check is `/health`. Error codes and response envelope fields are part of the v1 contract. Messages, docs, and internal file organization may change without changing the URL version.
 
-## Testing
+### Testing
 
 ```powershell
 node --test "core/**/*.test.js"
