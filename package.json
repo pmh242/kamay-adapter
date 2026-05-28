@@ -9,6 +9,7 @@
     "node": ">=20"
   },
   "scripts": {
+    "lab": "node scripts/lab.js smoke",
     "test": "node --test \"core/**/*.test.js\""
   },
   "dependencies": {}

@@ -53,6 +53,9 @@ does not copy those key names into the evidence manifest.
 Recommended storage is ignored `tmp/evidence/**`. Do not commit evidence
 bundles unless a future task explicitly approves a sanitized fixture.
 
+The [Agent Test Lab](../../agent-lab/README.md) can generate temporary
+diagnostics and evidence artifacts under ignored `tmp/agent-lab/**`.
+
 ## Route Decision
 
 No `/v1/evidence/*` route exists in this slice.

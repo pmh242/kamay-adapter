@@ -35,6 +35,7 @@ deployments/
 
 ## Test commands
 
+- `npm run lab` - local smoke lab with temporary evidence artifacts
 - `node --test "core/**/*.test.js"` - full suite
 - `node --test core/providers/repository/backends/github.test.js` - github only
 - `node --check <file>` - syntax check single file
@@ -80,6 +81,9 @@ Durable rules override only with an explicit task contract.
 - Do not add GitHub Actions or CI config unless explicitly requested.
 - Do not deploy Cloudflare from routine code tasks.
 - Do not configure secrets from routine code tasks.
+- Agent Test Lab commands are local, single-shot, operator-mediated validation only.
+- Lab artifacts belong under ignored `tmp/agent-lab/**` unless a task explicitly promotes sanitized evidence.
+- The lab must not become orchestration, autonomous execution, background monitoring, telemetry, or CI.
 
 ## Out of scope
 
