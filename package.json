@@ -10,6 +10,7 @@
   },
   "scripts": {
     "lab": "node scripts/lab.js smoke",
+    "ui": "node scripts/ui.js",
     "test": "node --test \"core/**/*.test.js\""
   },
   "dependencies": {}

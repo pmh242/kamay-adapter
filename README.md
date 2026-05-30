@@ -113,6 +113,7 @@ Operate:
 - [Auth Model](docs/security/auth-model.md) - header auth, signed URLs, and secret handling.
 - [Diagnostics](docs/infrastructure/diagnostics.md) - local status and redacted bug-export workflow.
 - [Evidence Context](docs/infrastructure/evidence-context.md) - portable local evidence packets.
+- [Local Status UI](docs/infrastructure/local-ui.md) - foreground-only local operator window.
 
 Status and future:
 

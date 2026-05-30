@@ -5,6 +5,7 @@ dist-debug/
 deployments/cloudflare-worker/dist-debug/
 .dev.vars
 .env.local
+.kamay-adapter.local.json
 smoke-stdout.txt
 smoke-stderr.txt
 tmp/

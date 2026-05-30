@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Kamay Adapter</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <main class="shell">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Local Operator Window</p>
+          <h1>Kamay Adapter</h1>
+          <p class="lede">Bounded repository context, diagnostics, evidence, and lab status in one local view.</p>
+        </div>
+        <div class="status-pill" id="overall-status">Loading</div>
+      </header>
+
+      <section class="grid">
+        <article class="panel span-2">
+          <div class="panel-head">
+            <h2>Connection</h2>
+            <p>Non-secret local settings only.</p>
+          </div>
+          <form id="config-form" class="form">
+            <label>
+              Base URL
+              <input name="baseUrl" autocomplete="off">
+            </label>
+            <label>
+              Repository
+              <input name="repoSlug" autocomplete="off">
+            </label>
+            <label>
+              Diagnostics Path
+              <input name="diagnosticsPath" autocomplete="off">
+            </label>
+            <label>
+              Evidence Path
+              <input name="evidencePath" autocomplete="off">
+            </label>
+            <label>
+              Lab Path
+              <input name="labPath" autocomplete="off">
+            </label>
+            <div class="actions">
+              <button type="submit">Save Local Settings</button>
+              <span id="save-message" role="status"></span>
+            </div>
+          </form>
+        </article>
+
+        <article class="panel">
+          <div class="panel-head">
+            <h2>Paths</h2>
+            <p>Repo and config location.</p>
+          </div>
+          <dl class="facts">
+            <dt>Repo root</dt>
+            <dd id="repo-root">-</dd>
+            <dt>Config</dt>
+            <dd id="config-path">-</dd>
+          </dl>
+        </article>
+
+        <article class="panel">
+          <div class="panel-head">
+            <h2>Boundaries</h2>
+            <p>What this window will not do.</p>
+          </div>
+          <ul class="checks" id="boundaries"></ul>
+        </article>
+      </section>
+
+      <section class="cards" id="artifact-cards"></section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Copy Commands</h2>
+          <p>Manual commands only. This UI does not execute them.</p>
+        </div>
+        <div class="commands" id="commands"></div>
+      </section>
+    </main>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
